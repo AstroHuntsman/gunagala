@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 """
-This is an Astropy affiliated package.
+This is a Python package from modelling the performance of astronomical instruments, including SNR/sensitivity limit/ETC calculations and simulating data.
 """
 
 # Affiliated packages may add whatever they like to this file, but
