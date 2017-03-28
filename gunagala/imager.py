@@ -3,6 +3,8 @@ import os
 
 import numpy as np
 from scipy.interpolate import interp1d
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 from astropy import constants as c

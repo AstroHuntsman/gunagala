@@ -61,7 +61,7 @@ class ZodiacalLight:
                          [230, 212, 195, 178, 163, 148, 134, 105, 83, 72]]).transpose()
 
 
-    def __init__(self, solar_path=sun_location):
+    def __init__(self, solar_path=get_pkg_data_filename('data/sky_data/sun_castelli.fits')):
         # Pre-calculate zodiacal light spectrum for later use.
         self._calculate_spectrum(solar_path)
         self._calculate_spatial()
