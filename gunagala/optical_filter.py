@@ -5,8 +5,12 @@ from scipy.special import eval_chebyt
 
 from astropy import units as u
 from astropy.table import Table
+from astropy.utils.data import get_pkg_data_filename
 
-from .imager import ensure_unit
+from .utils import ensure_unit
+
+
+data_dir = 'data/performance_data'
 
 
 class Filter:
@@ -21,7 +25,7 @@ class Filter:
             sky_mu (Quantity): the sky background surface brightness per arcsecond^2 (in ABmag units) for the band.
         """
 
-        transmission_data = Table.read(os.path.join('./data/performance_data', transmission_filename))
+        transmission_data = Table.read(get_pkg_data_filename(os.path.join(data_dir, transmission_filename)))
 
         if not transmission_data['Wavelength'].unit:
             transmission_data['Wavelength'].unit = u.nm

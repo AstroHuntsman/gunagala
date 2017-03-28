@@ -5,7 +5,7 @@ from astropy.convolution import discretize_model
 from astropy.modeling import Fittable2DModel
 from astropy.modeling.functional_models import Moffat2D
 
-from .imager import ensure_unit
+from .utils import ensure_unit
 
 
 class PSF(Fittable2DModel):

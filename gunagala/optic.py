@@ -1,9 +1,14 @@
 import os
+import numpy as np
 
 from astropy import units as u
 from astropy.table import Table
+from astropy.utils.data import get_pkg_data_filename
 
-from .imger import ensure_unit
+from .utils import ensure_unit
+
+
+data_dir = 'data/performance_data'
 
 
 class Optic:
@@ -28,7 +33,8 @@ class Optic:
 
         self.focal_length = ensure_unit(focal_length, u.mm)
 
-        tau_data = Table.read(os.path.join('./data/performance_data', throughput_filename))
+        print(os.path.join(data_dir, throughput_filename))
+        tau_data = Table.read(get_pkg_data_filename(os.path.join(data_dir, throughput_filename)))
 
         if not tau_data['Wavelength'].unit:
             tau_data['Wavelength'].unit = u.nm

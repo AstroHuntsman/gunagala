@@ -2,8 +2,12 @@ import os
 
 from astropy import units as u
 from astropy.table import Table
+from astropy.utils.data import get_pkg_data_filename
 
-from .imager import ensure_unit
+from .utils import ensure_unit
+
+
+data_dir = 'data/performance_data'
 
 
 class Camera:
@@ -47,7 +51,7 @@ class Camera:
         # Calculate the noise at the saturation level
         self.max_noise = (self.saturation_level * u.electron / u.pixel + self.read_noise**2)**0.5
 
-        QE_data = Table.read(os.path.join('.data/performance_data', QE_filename))
+        QE_data = Table.read(get_pkg_data_filename(os.path.join(data_dir, QE_filename)))
 
         if not QE_data['Wavelength'].unit:
             QE_data['Wavelength'].unit = u.nm

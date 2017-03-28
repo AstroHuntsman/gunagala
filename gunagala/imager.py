@@ -10,18 +10,11 @@ from astropy import units as u
 from astropy.table import Table
 
 from .optic import Optic
-from .filter import Filter
+from .optical_filter import Filter
 from .camera import Camera
 from .psf import PSF, Moffat_PSF
 from .config import load_config
-
-
-def ensure_unit(arg, unit):
-    """Ensures that the argument is using the required unit"""
-    if not isinstance(arg, u.Quantity):
-        arg = arg * unit
-    return arg.to(unit)
-
+from .utils import ensure_unit
 
 def create_imagers(config=None):
     """ Parse performance data config and create a corresponding dictionary of Imager objects.

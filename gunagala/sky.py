@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from scipy.interpolate import RectSphereBivariateSpline, SmoothBivariateSpline
 
@@ -6,6 +7,10 @@ import astropy.units as u
 import astropy.constants as c
 from astropy.coordinates import SkyCoord, GeocentricTrueEcliptic, get_sun, Angle
 from astropy.time import Time
+from astropy.utils.data import get_pkg_data_filename
+
+
+sun_location = 'ftp://ftp.stsci.edu/cdbs/grid/k93models/standards/sun_castelli.fits'
 
 
 class ZodiacalLight:
@@ -56,7 +61,7 @@ class ZodiacalLight:
                          [230, 212, 195, 178, 163, 148, 134, 105, 83, 72]]).transpose()
 
 
-    def __init__(self, solar_path='./data/sky_data/sun_castelli.fits'):
+    def __init__(self, solar_path=sun_location):
         # Pre-calculate zodiacal light spectrum for later use.
         self._calculate_spectrum(solar_path)
         self._calculate_spatial()

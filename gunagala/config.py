@@ -27,6 +27,7 @@ import os
 import yaml
 
 from astropy import units as u
+from astropy.utils.data import get_pkg_data_filename
 from warnings import warn
 
 
@@ -56,14 +57,14 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
 
     config = dict()
 
-    config_dir = './data'
+    config_dir = 'data'
 
     for f in config_files:
         if not f.endswith('.yaml'):
             f = '{}.yaml'.format(f)
 
         if not f.startswith('/'):
-            path = os.path.join(config_dir, f)
+            path = get_pkg_data_filename(os.path.join(config_dir, f))
         else:
             path = f
 
