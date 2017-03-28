@@ -32,7 +32,7 @@ env:
         - ASTROPY_VERSION=stable
         - MAIN_CMD='python setup.py'
         - SETUP_CMD='test'
-        - PIP_DEPENDENCIES='PyYAML'
+        - PIP_DEPENDENCIES='scipy matplotlib PyYAML'
         - EVENT_TYPE='pull_request push'
         - ASTROPY_USE_SYSTEM_PYTEST=1
 
