@@ -1,4 +1,4 @@
-from pocs.utils.config import load_config
+from .config import load_config
 
 import math
 import os

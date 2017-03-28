@@ -31,7 +31,7 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
 
     config = dict()
 
-    config_dir = '{}/conf_files'.format(os.getenv('POCS'))
+    config_dir = './conf_files/data/'
 
     for f in config_files:
         if not f.endswith('.yaml'):
