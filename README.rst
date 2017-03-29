@@ -13,4 +13,4 @@ calculations and simulating data.
     :alt: Travis Status
 
 .. image:: https://coveralls.io/repos/github/AstroHuntsman/gunagala/badge.svg?branch=master
-:target: https://coveralls.io/github/AstroHuntsman/gunagala?branch=master
+    :target: https://coveralls.io/github/AstroHuntsman/gunagala?branch=master
