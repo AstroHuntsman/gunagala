@@ -7,21 +7,18 @@ from ..optical_filter import Filter
 @pytest.fixture(scope='module', params=('table', 'chebyshev', 'butterworth'))
 def optical_filter(request):
     if request.param == 'table':
-        bandpass = Filter(transmission_filename='astrodon_g.csv',
-                          sky_mu=22.5 * u.ABmag)
+        bandpass = Filter(transmission_filename='astrodon_g.csv')
     elif request.param == 'chebyshev':
         bandpass = Filter(chebyshev_params={'wave1': 0.700 * u.micron,
                                             'wave2': 855.5,
                                             'order': 50,
                                             'ripple': 0.14,
-                                            'peak': 0.95},
-                          sky_mu=20.5 * u.ABmag)
+                                            'peak': 0.95})
     elif request.param == 'butterworth':
         bandpass = Filter(butterworth_params={'wave1': 700 * u.nm,
                                               'wave2': 855.5,
                                               'order': 250,
-                                              'peak': 0.95},
-                          sky_mu=20.5 * u.ABmag)
+                                              'peak': 0.95})
     else:
         pytest.fail("Unknown filter type {}!".format(request.param))
 
@@ -47,5 +44,4 @@ def test_filter_bad():
                                  'wave2': 855.5,
                                  'order': 50,
                                  'ripple': 0.14,
-                                 'peak': 0.95},
-               sky_mu=21.5 * u.ABmag)
+                                 'peak': 0.95})

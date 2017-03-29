@@ -20,7 +20,6 @@ class Filter:
                  transmission_filename=None,
                  chebyshev_params=None,
                  butterworth_params=None,
-                 sky_mu=None,
                  *kwargs):
         """Class representing an optical bandpass filter. The filter bandpass can be defined either by a table of
         transmission versus wavelength data or by one of the included analytic functions: Butterworth function or
@@ -31,8 +30,8 @@ class Filter:
                 data. Must be in a format readable by `astropy.table.Table.read()` and use column names `Wavelength`
                 and `Transmission`. If the data file does not provide units nm and dimensionless unscaled will be
                 assumed.
-
-            sky_mu (Quantity): the sky background surface brightness per arcsecond^2 (in ABmag units) for the band.
+            chebyshev_params (dict, optional):
+            butterworth_params(dict, optional):
         """
         n_args = np.count_nonzero((transmission_filename, chebyshev_params, butterworth_params))
         if n_args != 1:
@@ -73,8 +72,6 @@ class Filter:
 
             # Create a lambda function to calculate transmission at arbitrary wavelength.
             self._interpolator = lambda x: butter_band(x, w1=wave1, w2=wave2, N=order, peak=peak)
-
-        self.sky_mu = ensure_unit(sky_mu, u.ABmag)
 
     def transmission(self, waves):
         """Return filter transmission at the given wavelength(s). For filter bandpasses defined by data tables this
