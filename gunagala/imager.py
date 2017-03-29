@@ -969,26 +969,27 @@ class Imager:
                                                      filter_name=filter_name,
                                                      total_exp_time=exp_times.sum(),
                                                      sub_exp_time=longest_exp_time)
-            plt.subplot(2, 1, 1)
-            plt.plot(magnitudes, snrs, 'b-', label='HDR mode')
+            fig = plt.figure(figsize=(12, 12), tight_layout=True)
+            ax1 = plt.add_subplot(2, 1, 1)
+            ax1.plot(magnitudes, snrs, 'b-', label='HDR mode')
             if hdr:
-                plt.plot(magnitudes, non_hdr_snrs, 'c:', label='Non-HDR mode')
-                plt.legend(loc='upper right', fancybox=True, framealpha=0.3)
-            plt.xlabel('Point source brightness / AB magnitude')
-            plt.ylabel('Signal to noise ratio')
-            plt.title('Point source PSF fitting signal to noise ratio for combined data')
+                ax1.plot(magnitudes, non_hdr_snrs, 'c:', label='Non-HDR mode')
+                ax1.legend(loc='upper right', fancybox=True, framealpha=0.3)
+            ax1.set_xlabel('Point source brightness / AB magnitude')
+            ax1.set_ylabel('Signal to noise ratio')
+            ax1.set_title('Point source PSF fitting signal to noise ratio for combined data')
 
-            plt.subplot(2, 1, 2)
-            plt.semilogy(magnitudes, snrs, 'b-', label='HDR mode')
+            ax2 = plt.add_subplot(2, 1, 2)
+            ax2.semilogy(magnitudes, snrs, 'b-', label='HDR mode')
             if hdr:
-                plt.semilogy(magnitudes, non_hdr_snrs, 'c:', label='Non-HDR mode')
-                plt.legend(loc='upper right', fancybox=True, framealpha=0.3)
-            plt.xlabel('Point source brightness / AB magnitude')
-            plt.ylabel('Signal to noise ratio')
-            plt.title('Point source PSF fitting signal to noise ratio for combined data')
+                ax2.semilogy(magnitudes, non_hdr_snrs, 'c:', label='Non-HDR mode')
+                ax2.legend(loc='upper right', fancybox=True, framealpha=0.3)
+            ax2.set_xlabel('Point source brightness / AB magnitude')
+            ax2.set_ylabel('Signal to noise ratio')
+            ax2.set_title('Point source PSF fitting signal to noise ratio for combined data')
 
-            plt.gcf().set_size_inches(12, 12)
-            plt.savefig(plot)
+            fig.savefig(plot)
+            plt.close(fig)
 
         return magnitudes.to(u.ABmag), snrs.to(u.dimensionless_unscaled)
 
