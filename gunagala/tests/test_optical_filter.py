@@ -19,7 +19,7 @@ def optical_filter(request):
     elif request.param == 'butterworth':
         bandpass = Filter(butterworth_params={'wave1': 700 * u.nm,
                                               'wave2': 855.5,
-                                              'order': 3,
+                                              'order': 250,
                                               'peak': 0.95},
                           sky_mu=20.5 * u.ABmag)
     else:
@@ -30,7 +30,7 @@ def optical_filter(request):
 
 def test_filter(optical_filter):
     assert isinstance(optical_filter, Filter)
-    waves = (0.3, 0.4, 0,5, 0,6, 0,7, 0.8, 0.9, 1.0, 1.1) * u.um
+    waves = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1) * u.um
     trans = optical_filter.transmission(waves)
     assert isinstance(trans, u.Quantity)
     assert len(trans) == len(waves)
