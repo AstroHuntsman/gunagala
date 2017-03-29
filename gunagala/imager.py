@@ -970,7 +970,7 @@ class Imager:
                                                      total_exp_time=exp_times.sum(),
                                                      sub_exp_time=longest_exp_time)
             fig = plt.figure(figsize=(12, 12), tight_layout=True)
-            ax1 = plt.add_subplot(2, 1, 1)
+            ax1 = fig.add_subplot(2, 1, 1)
             ax1.plot(magnitudes, snrs, 'b-', label='HDR mode')
             if hdr:
                 ax1.plot(magnitudes, non_hdr_snrs, 'c:', label='Non-HDR mode')
@@ -979,7 +979,7 @@ class Imager:
             ax1.set_ylabel('Signal to noise ratio')
             ax1.set_title('Point source PSF fitting signal to noise ratio for combined data')
 
-            ax2 = plt.add_subplot(2, 1, 2)
+            ax2 = fig.add_subplot(2, 1, 2)
             ax2.semilogy(magnitudes, snrs, 'b-', label='HDR mode')
             if hdr:
                 ax2.semilogy(magnitudes, non_hdr_snrs, 'c:', label='Non-HDR mode')
