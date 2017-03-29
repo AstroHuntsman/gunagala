@@ -167,7 +167,7 @@ imagers:
         num_per_computer: 5
 
     ase_e2v:
-        optic: ase160
+        optic: ase90
         camera: cis115
         filters:
             - ase_i1
