@@ -928,11 +928,10 @@ class Imager:
 
         # Interpolate throughput, filter transmission and QE to new grid
         tau = interp1d(self.optic.wavelengths, self.optic.throughput, kind='linear', fill_value='extrapolate')
-        ft = interp1d(self.band.wavelengths, self.band.transmission, kind='linear', fill_value='extrapolate')
         qe = interp1d(self.camera.wavelengths, self.camera.QE, kind='linear', fill_value='extrapolate')
 
         # End-to-end efficiency. Need to put units back after interpolation
-        effs = tau(waves) * ft(waves) * qe(waves) * u.electron / u.photon
+        effs = tau(waves) * self.band.transmission(waves) * qe(waves) * u.electron / u.photon
 
         # Band averaged efficiency, effective wavelengths, bandwidth (STSci definition), flux_integral
         i0 = np.trapz(effs, x=waves)

@@ -90,6 +90,54 @@ filters:
         transmission_filename: 'astrodon_ha_5nm.csv'
         sky_mu: 20.5 # AB mag per square arcsecond
 
+    ase_i1:
+        chebyshev_params:
+            wave1: 700.0 # nm
+            wave2: 850.0 # nm
+            order: 50
+            ripple: 0.14
+            peak: 0.95
+
+    ase_i2:
+        chebyshev_params:
+            wave1: 700.0 # nm
+            wave2: 855.5 # nm
+            order: 50
+            ripple: 0.14
+            peak: 0.95
+
+    ase_i3:
+        chebyshev_params:
+            wave1: 700.0 # nm
+            wave2: 861.0 # nm
+            order: 50
+            ripple: 0.14
+            peak: 0.95
+
+    ase_z1:
+        chebyshev_params:
+            wave1: 854.0 # nm
+            wave2: 1000 # nm
+            order: 50
+            ripple: 0.14
+            peak: 0.95
+
+    ase_z2:
+        chebyshev_params:
+            wave1: 859.5 # nm
+            wave2: 1000 # nm
+            order: 50
+            ripple: 0.14
+            peak: 0.95
+
+    ase_z3:
+        chebyshev_params:
+            wave1: 865.0 # nm
+            wave2: 1000 # nm
+            order: 50
+            ripple: 0.14
+            peak: 0.95
+
 psfs:
     2as:
         model: 'Moffat_PSF'
@@ -97,7 +145,7 @@ psfs:
         shape: 2.5
 
 imagers:
-     canon_sbig_g:
+    canon_sbig_g:
         optic: canon
         camera: sbig
         filter: g
@@ -105,7 +153,7 @@ imagers:
         num_imagers: 5
         num_per_computer: 5
 
-     canon_sbig_r:
+    canon_sbig_r:
         optic: canon
         camera: sbig
         filter: r
