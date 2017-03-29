@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 from astropy import constants as c
 from astropy import units as u
 from astropy.table import Table
+from astropy.wcs import WCS
 
 from .optic import Optic
 from .optical_filter import Filter
@@ -33,6 +34,7 @@ def create_imagers(config=None):
     if config is None:
         config = load_config('performance')
 
+    # Caches for instantiated objects
     optics = dict()
     cameras = dict()
     filters = dict()
@@ -66,17 +68,19 @@ def create_imagers(config=None):
             # Put in cache
             cameras[camera_name] = camera
 
-        filter_name = imager_info['filter']
-        try:
-            # Try to get from cache
-            band = filters[filter_name]
-        except KeyError:
-            # Create optic from this imager
-            filter_info = config['filters'][filter_name]
-            band = Filter(**filter_info)
+        bands = {}
+        band_names = imager_info['filters']
+        for band_name in band_names:
+            try:
+                # Try to get from cache
+                bands[band_name] = filters[band_name]
+            except KeyError:
+                # Create Filter for this imager
+                filter_info = config['filters'][band_name]
+                bands[band_name] = Filter(**filter_info)
 
-            # Put in cache
-            filters[filter_name] = band
+                # Put in cache
+                filters[band_name] = bands[band_name]
 
         psf_name = imager_info['psf']
         # Don't cache these as their attributes get modified by the Imager they're associated with so
@@ -87,7 +91,7 @@ def create_imagers(config=None):
 
         imagers[name] = Imager(optic,
                                camera,
-                               band,
+                               bands,
                                psf,
                                imager_info.get('num_imagers', 1),
                                imager_info.get('num_per_computer', 1))
@@ -96,17 +100,17 @@ def create_imagers(config=None):
 
 class Imager:
 
-    def __init__(self, optic, camera, band, psf, num_imagers=1, num_per_computer=1):
+    def __init__(self, optic, camera, filters, psf, num_imagers=1, num_per_computer=1):
         """
         Class representing an astronomical imaging system, including optics, optical filters and camera. Also includes
         a point spread function (PSF) model. It can also be used to represent an array of identical co-aligned imagers
         using the optional `num_imagers` parameter to specify the number of copies whose data will be combined.
 
         Args:
-            optic: An instance of the Optic class
-            camera: An instance of the Camera class
-            band: An instance of the bandpass Filter class
-            psf: An instance of the PSF class
+            optic (optic.Optic): An instance of the Optic class
+            camera (camera.Camera): An instance of the Camera class
+            filters (dict): A dictionary containing instances of the filter.Filter class
+            psf (psf.PSF): An instance of the PSF class
             num_imagers (int, optional): to represent an array of identical, co-aligned imagers specify the number here
             num_per_computer (int, optional): number of cameras connected to each computer. Used in situations where
                 multiple cameras must be readout sequentially so the effective readout time is equal to the readout
@@ -114,17 +118,19 @@ class Imager:
         """
 
         if not isinstance(optic, Optic):
-            raise ValueError("optic must be an instance of the Optic class")
+            raise ValueError("'{}' is not an instance of the Optic class!".format(optic))
         if not isinstance(camera, Camera):
-            raise ValueError("camera must be an instance of the Camera class")
-        if not isinstance(band, Filter):
-            raise ValueError("band must be an instance of the Filter class")
+            raise ValueError("'{}' is not an instance of the Camera class!".format(camera))
+        for band in filters.values():
+            if not isinstance(band, Filter):
+                raise ValueError("'{}' is not an instance of the Filter class!".format(band))
         if not isinstance(psf, PSF):
-            raise ValueError("psf must be an instance of the PSF class")
+            raise ValueError("'{}' is not an instance of the PSF class!".format(psf))
 
         self.optic = optic
         self.camera = camera
-        self.band = band
+        self.filter_names = filters.keys()
+        self.filters = filters
         self.psf = psf
         self.num_imagers = int(num_imagers)
         self.num_per_computer = int(num_per_computer)
@@ -140,19 +146,30 @@ class Imager:
         self.field_of_view = (self.camera.resolution * self.pixel_scale)
         self.field_of_view = self.field_of_view.to(u.degree, equivalencies=u.dimensionless_angles())
 
+        # Construct a simple template WCS to store the focal plane configuration parameters
+        self.wcs = WCS(naxis=2)
+        self.wcs._naxis1 = self.camera.resolution[0].value
+        self.wcs._naxis2 = self.camera.resolution[1].value
+        self.wcs.wcs.crpix = [(self.camera.resolution[0].value + 1)/2,
+                              (self.camera.resolution[1].value + 1)/2]
+        self.wcs.wcs.cdelt = [self.pixel_scale.to(u.degree / u.pixel).value,
+                              self.pixel_scale.to(u.degree / u.pixel).value]
+        self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+
         # Calculate end to end efficiencies, etc.
         self._efficiencies()
 
         # Calculate sky count rate for later use
-        self.sky_rate = self.SB_to_rate(self.band.sky_mu)
+        self.sky_rate = {name: self.SB_to_rate(band.sky_mu, name) for name, band in self.filters.items()}
 
-    def extended_source_signal_noise(self, surface_brightness, total_exp_time, sub_exp_time, calc_type='per pixel',
-                                     saturation_check=True, binning=1):
+    def extended_source_signal_noise(self, surface_brightness, filter_name, total_exp_time, sub_exp_time,
+                                     calc_type='per pixel', saturation_check=True, binning=1):
         """Calculates the signal and noise for an extended source with given surface brightness
 
         Args:
             surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
                 an equivalent count rate in photo-electrons per second per pixel.
+            filter_name: name of the optical filter in use
             total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
                 multiple of sub_exp_time
             sub_exp_time (Quantity): length of individual sub-exposures
@@ -165,6 +182,8 @@ class Imager:
         Returns:
             (Quantity, Quantity): signal and noise, units determined by calculation type.
         """
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
 
         if calc_type not in ('per pixel', 'per arcsecond squared'):
             raise ValueError("Invalid calculation type '{}'!".format(calc_type))
@@ -180,7 +199,7 @@ class Imager:
             rate = surface_brightness.to(u.electron / (u.pixel * u.second))
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
-            rate = self.SB_to_rate(surface_brightness)
+            rate = self.SB_to_rate(surface_brightness, filter_name)
 
         total_exp_time = ensure_unit(total_exp_time, u.second)
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
@@ -192,7 +211,7 @@ class Imager:
 
         # Noise sources (per pixel for single imager)
         signal = (rate * total_exp_time).to(u.electron / u.pixel)
-        sky_counts = self.sky_rate * total_exp_time
+        sky_counts = self.sky_rate[filter_name] * total_exp_time
         dark_counts = self.camera.dark_current * total_exp_time
         total_read_noise = number_subs**0.5 * self.camera.read_noise
 
@@ -201,7 +220,7 @@ class Imager:
 
         # Saturation check
         if saturation_check:
-            saturated = self._is_saturated(rate, sub_exp_time)
+            saturated = self._is_saturated(rate, sub_exp_time, filter_name)
             # np.where strips units, need to manually put them back.
             signal = np.where(saturated, 0, signal) * u.electron / u.pixel
             noise = np.where(saturated, 0, noise) * u.electron / u.pixel
@@ -217,13 +236,14 @@ class Imager:
 
         return signal, noise
 
-    def extended_source_snr(self, surface_brightness, total_exp_time, sub_exp_time, calc_type='per pixel',
-                            saturation_check=True, binning=1):
+    def extended_source_snr(self, surface_brightness, filter_name, total_exp_time, sub_exp_time,
+                            calc_type='per pixel', saturation_check=True, binning=1):
         """ Calculates the signal and noise for an extended source with given surface brightness
 
         Args:
             surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
                 an equivalent count rate in photo-electrons per second per pixel.
+            filter_name: name of the optical filter in use
             total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
                 multiple of sub_exp_time
             sub_exp_time (Quantity): length of individual sub-exposures
@@ -236,15 +256,15 @@ class Imager:
         Returns:
             Quantity: signal to noise ratio, Quantity with dimensionless unscaled units
         """
-        signal, noise = self.extended_source_signal_noise(surface_brightness, total_exp_time, sub_exp_time, calc_type,
-                                                          saturation_check, binning)
+        signal, noise = self.extended_source_signal_noise(surface_brightness, filter_name, total_exp_time,
+                                                          sub_exp_time, calc_type, saturation_check, binning)
 
         # np.where() strips units, need to manually put them back
         snr = np.where(noise != 0.0, signal / noise, 0.0) * u.dimensionless_unscaled
 
         return snr
 
-    def extended_source_etc(self, surface_brightness, snr_target, sub_exp_time, calc_type='per pixel',
+    def extended_source_etc(self, surface_brightness, filter_name, snr_target, sub_exp_time, calc_type='per pixel',
                             saturation_check=True, binning=1):
         """Calculates the total exposure time required to reach a given signal to noise ratio for a given extended
         source surface brightness.
@@ -252,6 +272,7 @@ class Imager:
         Args:
             surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
                 an equivalent count rate in photo-electrons per second per pixel.
+            filter_name: name of the optical filter in use
             snr_target: The desired signal-to-noise ratio for the target
             sub_exp_time (Quantity): length of individual sub-exposures
             calc_type (string, optional, default 'per pixel'): calculation type, 'per pixel' to calculate signal & noise
@@ -264,6 +285,8 @@ class Imager:
             Quantity: total exposure time required to reach the signal to noise ratio target, rounded up to an integer
                 multiple of sub_exp_time
         """
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
 
         if calc_type not in ('per pixel', 'per arcsecond squared'):
             raise ValueError("Invalid calculation type '{}'!".format(calc_type))
@@ -288,14 +311,14 @@ class Imager:
             rate = surface_brightness.to(u.electron / (u.pixel * u.second))
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
-            rate = self.SB_to_rate(surface_brightness)
+            rate = self.SB_to_rate(surface_brightness, filter_name)
 
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
 
         # If required total exposure time is much greater than the length of a sub-exposure then
         # all noise sources (including read noise) are proportional to t^0.5 and we can use a
         # simplified expression to estimate total exposure time.
-        noise_squared_rate = ((rate + self.sky_rate + self.camera.dark_current) * (u.electron / u.pixel) +
+        noise_squared_rate = ((rate + self.sky_rate[filter_name] + self.camera.dark_current) * (u.electron / u.pixel) +
                               self.camera.read_noise**2 / sub_exp_time)
         noise_squared_rate = noise_squared_rate.to(u.electron**2 / (u.pixel**2 * u.second))
         total_exp_time = (snr_target**2 * noise_squared_rate / rate**2).to(u.second)
@@ -307,23 +330,24 @@ class Imager:
         number_subs = np.ceil(total_exp_time / sub_exp_time)
 
         if saturation_check:
-            saturated = self._is_saturated(rate, sub_exp_time)
+            saturated = self._is_saturated(rate, sub_exp_time, filter_name)
             number_subs = np.where(saturated, 0, number_subs)
 
         return number_subs * sub_exp_time
 
-    def extended_source_limit(self, total_exp_time, snr_target, sub_exp_time, calc_type='per pixel', binning=1,
-                              enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
+    def extended_source_limit(self, total_exp_time, filter_name, snr_target, sub_exp_time, calc_type='per pixel',
+                              binning=1, enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
         """Calculates the limiting extended source surface brightness for a given minimum signal to noise ratio and
         total exposure time.
 
         Args:
             total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
                 multiple of sub_exp_time
+            filter_name: name of the optical filter in use
             snr_target: The desired signal-to-noise ratio for the target
+            sub_exp_time: Sub exposure time for each image, defaults to 300 seconds
             calc_type (string, optional, default 'per pixel'): calculation type, 'per pixel' to calculate signal & noise
                 per pixel, 'per arcsecond squared' to calculate signal & noise per arcsecond^2
-            sub_exp_time: Sub exposure time for each image, defaults to 300 seconds
             binning (int, optional): pixel binning factor. Cannot be used with calculation type 'per arcsecond squared'
             enable_read_noise (bool, optional, default True): If False calculates limit as if read noise were zero
             enable_sky_noise (bool, optional, default True): If False calculates limit as if sky background were zero
@@ -332,6 +356,8 @@ class Imager:
         Returns:
             Quantity: limiting source surface brightness per arcsecond squared, in AB mag units.
         """
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
 
         if calc_type not in ('per pixel', 'per arcsecond squared'):
             raise ValueError("Invalid calculation type '{}'!".format(calc_type))
@@ -357,7 +383,7 @@ class Imager:
         total_exp_time = number_subs * sub_exp_time
 
         # Noise sources
-        sky_counts = self.sky_rate * total_exp_time if enable_sky_noise else 0.0 * u.electron / u.pixel
+        sky_counts = self.sky_rate[filter_name] * total_exp_time if enable_sky_noise else 0.0 * u.electron / u.pixel
         dark_counts = self.camera.dark_current * total_exp_time if enable_dark_noise else 0.0 * u.electron / u.pixel
         total_read_noise = number_subs**0.5 * \
             self.camera.read_noise if enable_read_noise else 0.0 * u.electron / u.pixel
@@ -373,60 +399,71 @@ class Imager:
         rate = (-b + (b**2 - 4 * a * c)**0.5) / (2 * a)
         rate = rate.to(u.electron / (u.pixel * u.second))
 
-        return self.rate_to_SB(rate)
+        return self.rate_to_SB(rate, filter_name)
 
-    def ABmag_to_rate(self, mag):
+    def ABmag_to_rate(self, mag, filter_name):
         """ Converts AB magnitudes to photo-electrons per second in the image sensor
 
         Args:
             mag (Quantity): source brightness in AB magnitudes
+            filter_name: name of the optical filter in use
 
         Returns:
             Quantity: corresponding photo-electrons per second
         """
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
+
         mag = ensure_unit(mag, u.ABmag)
 
         # First convert to incoming spectral flux density per unit frequency
-        f_nu = mag.to(u.W / (u.m**2 * u.Hz), equivalencies=u.equivalencies.spectral_density(self.pivot_wave))
+        f_nu = mag.to(u.W / (u.m**2 * u.Hz),
+                      equivalencies=u.equivalencies.spectral_density(self.pivot_wave[filter_name]))
         # Then convert to photo-electron rate using the 'sensitivity integral' for the instrument
-        rate = f_nu * self.optic.aperture_area * self._iminus1 * u.photon / c.h
+        rate = f_nu * self.optic.aperture_area * self._iminus1[filter_name] * u.photon / c.h
 
         return rate.to(u.electron / u.second)
 
-    def rate_to_ABmag(self, rate):
+    def rate_to_ABmag(self, rate, filter_name):
         """ Converts photo-electrons per second in the image sensor to AB magnitudes
 
         Args:
             rate (Quantity): photo-electrons per second
+            filter_name: name of the optical filter in use
 
         Returns:
             Quantity: corresponding source brightness in AB magnitudes
         """
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
+
         rate = ensure_unit(rate, u.electron / u.second)
 
         # First convert to incoming spectral flux density using the 'sensitivity integral' for the instrument
-        f_nu = rate * c.h / (self.optic.aperture_area * self._iminus1 * u.photon)
+        f_nu = rate * c.h / (self.optic.aperture_area * self._iminus1[filter_name] * u.photon)
         # Then convert to AB magnitudes
-        return f_nu.to(u.ABmag, equivalencies=u.equivalencies.spectral_density(self.pivot_wave))
+        return f_nu.to(u.ABmag, equivalencies=u.equivalencies.spectral_density(self.pivot_wave[filter_name]))
 
-    def SB_to_rate(self, mag):
+    def SB_to_rate(self, mag, filter_name):
         """ Converts surface brightness AB magnitudes (per arcsecond squared) to photo-electrons per pixel per second.
 
         Args:
             mag (Quantity): source surface brightness in AB magnitudes
+            filter_name: name of the optical filter in use
 
         Returns:
             Quantity: corresponding photo-electrons per pixel per second
         """
         # Use ABmag_to_rate() to convert to electrons per second, then multiply by pixel area
-        SB_rate = self.ABmag_to_rate(mag) * self.pixel_area / (u.arcsecond**2)
+        SB_rate = self.ABmag_to_rate(mag, filter_name) * self.pixel_area / (u.arcsecond**2)
         return SB_rate.to(u.electron / (u.second * u.pixel))
 
-    def rate_to_SB(self, SB_rate):
+    def rate_to_SB(self, SB_rate, filter_name):
         """ Converts photo-electrons per pixel per second to surface brightness AB magnitudes (per arcsecond squared)
 
         Args:
             SB_rate (Quantity): photo-electrons per pixel per second
+            filter_name: name of the optics filter in use
 
         Returns:
             Quantity: corresponding source surface brightness in AB magnitudes
@@ -435,23 +472,28 @@ class Imager:
         # Divide by pixel area to convert to electrons per second per arcsecond^2
         rate = SB_rate * u.arcsecond**2 / self.pixel_area
         # Use rate_to_ABmag() to convert to AB magnitudes
-        return self.rate_to_ABmag(rate)
+        return self.rate_to_ABmag(rate, filter_name)
 
-    def ABmag_to_flux(self, mag):
+    def ABmag_to_flux(self, mag, filter_name):
         """ Converts brightness of the target to total flux, integrated over the filter band.
 
         Args:
             mag: brightness of the target, measured in ABmag
+            filter_name: name of the optical filter in use
 
         Returns:
             Quantity: corresponding total flux in units of Watts per square metre
         """
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
+
         mag = ensure_unit(mag, u.ABmag)
 
         # First convert to spectral flux density per unit wavelength
-        f_nu = mag.to(u.W / (u.m**2 * u.Hz), equivalencies=u.equivalencies.spectral_density(self.pivot_wave))
+        f_nu = mag.to(u.W / (u.m**2 * u.Hz),
+                      equivalencies=u.equivalencies.spectral_density(self.pivot_wave[filter_name]))
         # Then use pre-calculated integral to convert to total flux in the band (assumed constant F_nu)
-        flux = f_nu * c.c * self._iminus2 * u.photon / u.electron
+        flux = f_nu * c.c * self._iminus2[filter_name] * u.photon / u.electron
 
         return flux.to(u.W / (u.m**2))
 
@@ -486,12 +528,13 @@ class Imager:
         elapsed_time = exp_list.sum() + len(exp_list) * self.num_per_computer * self.camera.readout_time
         return elapsed_time
 
-    def point_source_signal_noise(self, brightness, total_exp_time, sub_exp_time, saturation_check=True):
+    def point_source_signal_noise(self, brightness, filter_name, total_exp_time, sub_exp_time, saturation_check=True):
         """Calculates the signal and noise for a point source of a given brightness, assuming PSF fitting photometry
 
         Args:
             brightness (Quantity): brightness of the source, in ABmag units, or an equivalent count rate in
                 photo-electrons per second.
+            filter_name: name of the optical filter in use
             total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
                 multiple of sub_exp_time
             sub_exp_time (Quantity): length of individual sub-exposures
@@ -509,14 +552,15 @@ class Imager:
             rate = brightness.to(u.electron / u.second)
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have brightness in ABmag, call conversion function
-            rate = self.ABmag_to_rate(brightness)
+            rate = self.ABmag_to_rate(brightness, filter_name)
 
         # For PSF fitting photometry the signal to noise calculation is equivalent to dividing the flux equally
         # amongst n_pix pixels, where n_pix is the sum of the squares of the pixel values of the PSF.  The psf
         # object pre-calculates n_pix for the worst case where the PSF is centred on the corner of a pixel.
 
         # Now calculate effective signal and noise, using binning to calculate the totals.
-        signal, noise = self.extended_source_signal_noise(rate / self.psf.n_pix, total_exp_time, sub_exp_time,
+        signal, noise = self.extended_source_signal_noise(rate / self.psf.n_pix, filter_name,
+                                                          total_exp_time, sub_exp_time,
                                                           saturation_check=False, binning=self.psf.n_pix / u.pixel)
         signal = signal * u.pixel
         noise = noise * u.pixel
@@ -525,20 +569,21 @@ class Imager:
         # in a single pixel, this is available as psf.peak. Can use this to calculate maximum electrons per pixel
         # in a single sub exposure, and check against saturation_level.
         if saturation_check:
-            saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time)
+            saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time, filter_name)
             # np.where strips units, need to manually put them back.
             signal = np.where(saturated, 0.0, signal) * u.electron
             noise = np.where(saturated, 0.0, noise) * u.electron
 
         return signal, noise
 
-    def point_source_snr(self, brightness, total_exp_time, sub_exp_time, saturation_check=True):
+    def point_source_snr(self, brightness, filter_name, total_exp_time, sub_exp_time, saturation_check=True):
         """Calculates the signal to noise ratio for a point source of a given brightness, assuming PSF fitting
         photometry
 
         Args:
             brightness (Quantity): brightness of the source, in ABmag units, or an equivalent count rate in
                 photo-electrons per second.
+            filter_name: name of the optical filter in use
             total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
                 multiple of sub_exp_time
             sub_exp_time (Quantity): length of individual sub-exposures
@@ -548,20 +593,22 @@ class Imager:
         Returns:
             Quantity: signal to noise ratio, Quantity with dimensionless unscaled units
         """
-        signal, noise = self.point_source_signal_noise(brightness, total_exp_time, sub_exp_time, saturation_check)
+        signal, noise = self.point_source_signal_noise(brightness, filter_name,
+                                                       total_exp_time, sub_exp_time, saturation_check)
 
         # np.where() strips units, need to manually put them back.
         snr = np.where(noise != 0.0, signal / noise, 0.0) * u.dimensionless_unscaled
 
         return snr
 
-    def point_source_etc(self, brightness, snr_target, sub_exp_time, saturation_check=True):
+    def point_source_etc(self, brightness, filter_name, snr_target, sub_exp_time, saturation_check=True):
         """ Calculates the total exposure time required to reach a given signal to noise ratio for a given point
         source brightness.
 
         Args:
             brightness (Quantity): brightness of the source, in ABmag units, or an equivalent count rate in
                 photo-electrons per second.
+            filter_name: name of the optical filter in use
             snr_target: the desired signal-to-noise ratio for the target
             sub_exp_time (Quantity): length of individual sub-exposures
             saturation_check (bool, optional, default True): if true will set total exposure time to zero if the
@@ -579,22 +626,22 @@ class Imager:
             rate = brightness.to(u.electron / u.second)
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have brightness in ABmag, call conversion function
-            rate = self.ABmag_to_rate(brightness)
+            rate = self.ABmag_to_rate(brightness, filter_name)
 
-        total_exp_time = self.extended_source_etc(rate / self.psf.n_pix, snr_target, sub_exp_time,
+        total_exp_time = self.extended_source_etc(rate / self.psf.n_pix, filter_name, snr_target, sub_exp_time,
                                                   saturation_check=False, binning=self.psf.n_pix / u.pixel)
 
         # Saturation check. For point sources need to know maximum fraction of total electrons that will end up
         # in a single pixel, this is available as psf.peak. Can use this to calculate maximum electrons per pixel
         # in a single sub exposure, and check against saturation_level.
         if saturation_check:
-            saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time)
+            saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time, filter_name)
             # np.where() strips units, need to manually put them back
             total_exp_time = np.where(saturated, 0.0, total_exp_time) * u.second
 
         return total_exp_time
 
-    def point_source_limit(self, total_exp_time, snr_target, sub_exp_time,
+    def point_source_limit(self, total_exp_time, filter_name, snr_target, sub_exp_time,
                            enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
         """Calculates the limiting point source surface brightness for a given minimum signal to noise ratio and
         total exposure time.
@@ -602,6 +649,7 @@ class Imager:
         Args:
             total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
                 multiple of sub_exp_time
+            filter_name: name of the optical filter in use
             snr_target: The desired signal-to-noise ratio for the target
             sub_exp_time: Sub exposure time for each image
             enable_read_noise (bool, optional, default True): If False calculates limit as if read noise were zero
@@ -616,7 +664,7 @@ class Imager:
         # object pre-calculates n_pix for the worst case where the PSF is centred on the corner of a pixel.
 
         # Calculate the equivalent limiting surface brighness, in AB magnitude per arcsecond^2
-        equivalent_SB = self.extended_source_limit(total_exp_time, snr_target, sub_exp_time,
+        equivalent_SB = self.extended_source_limit(total_exp_time, filter_name, snr_target, sub_exp_time,
                                                    binning=self.psf.n_pix / u.pixel,
                                                    enable_read_noise=enable_read_noise,
                                                    enable_sky_noise=enable_sky_noise,
@@ -626,12 +674,13 @@ class Imager:
         # astropy.units.ABmag doesn't really support arithmetic at the moment, have to strip units.
         return (equivalent_SB.value - 2.5 * np.log10(self.psf.n_pix * self.pixel_area / u.arcsecond**2).value) * u.ABmag
 
-    def extended_source_saturation_mag(self, sub_exp_time, n_sigma=3.0):
+    def extended_source_saturation_mag(self, sub_exp_time, filter_name, n_sigma=3.0):
         """ Calculates the surface brightness of the brightest extended source that would definitely not saturate the
             image sensor in a given (sub) exposure time.
 
         Args:
             sub_exp_time (Quantity): length of the (sub) exposure
+            filter_name: name of the optical filter in use
             n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
                 in multiples of the noise
 
@@ -639,43 +688,54 @@ class Imager:
             Quantity: surface brightness per arcsecond^2 of the brightest extended source that will definitely not
                 saturate, in AB magnitudes.
         """
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
+
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
         max_rate = (self.camera.saturation_level - n_sigma * self.camera.max_noise) / sub_exp_time
-        max_source_rate = max_rate - self.sky_rate - self.camera.dark_current
+        max_source_rate = max_rate - self.sky_rate[filter_name] - self.camera.dark_current
 
-        return self.rate_to_SB(max_source_rate)
+        return self.rate_to_SB(max_source_rate, filter_name)
 
-    def point_source_saturation_mag(self, sub_exp_time, n_sigma=3.0):
+    def point_source_saturation_mag(self, sub_exp_time, filter_name, n_sigma=3.0):
         """ Calculates the magnitude of the brightest point source that would definitely not saturate the image
             sensor in a given (sub) exposure time.
 
         Args:
             sub_exp_time (Quantity): length of the (sub) exposure
+            filter_name: name of the optical filter in use
             n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
                 in multiples of the noise
 
         Returns:
             Quantity: AB magnitude of the brightest point source that will definitely not saturate.
         """
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
+
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
         max_rate = (self.camera.saturation_level - n_sigma * self.camera.max_noise) / sub_exp_time
-        max_source_rate = max_rate - self.sky_rate - self.camera.dark_current
+        max_source_rate = max_rate - self.sky_rate[filter_name] - self.camera.dark_current
 
-        return self.rate_to_ABmag(max_source_rate / self.psf.peak)
+        return self.rate_to_ABmag(max_source_rate / self.psf.peak, filter_name)
 
-    def extended_source_saturation_exp(self, surface_brightness, n_sigma=3.0):
+    def extended_source_saturation_exp(self, surface_brightness, filter_name, n_sigma=3.0):
         """ Calculates the maximum (sub) exposure time that will definitely avoid saturation for an extended source
             of given surface brightness
 
         Args:
             surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
                 an equivalent count rate in photo-electrons per second per pixel.
+            filter_name: name of the optical filter in use
             n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
                 in multiples of the noise
 
         Returns:
             Quantity: maximum length of (sub) exposure that will definitely avoid saturation
         """
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
+
         if not isinstance(surface_brightness, u.Quantity):
             brightness = brightness * u.ABmag
 
@@ -684,21 +744,22 @@ class Imager:
             rate = surface_brightness.to(u.electron / (u.pixel * u.second))
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
-            rate = self.SB_to_rate(surface_brightness)
+            rate = self.SB_to_rate(surface_brightness, filter_name)
 
-        total_rate = rate + self.sky_rate + self.camera.dark_current
+        total_rate = rate + self.sky_rate[filter_name] + self.camera.dark_current
 
         max_electrons_per_pixel = self.camera.saturation_level - n_sigma * self.camera.max_noise
 
         return max_electrons_per_pixel / total_rate
 
-    def point_source_saturation_exp(self, brightness, n_sigma=3.0):
+    def point_source_saturation_exp(self, brightness, filter_name, n_sigma=3.0):
         """ Calculates the maximum (sub) exposure time that will definitely avoid saturation for point source of given
             brightness
 
         Args:
             brightness (Quantity): brightness of the point source, in ABmag units, or an equivalent count rate in
                 photo-electrons per second.
+            filter_name: name of the optical filter in use
             n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
                 in multiples of the noise
 
@@ -713,12 +774,13 @@ class Imager:
             rate = brightness.to(u.electron / u.second)
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have brightness in ABmag, call conversion function
-            rate = self.ABmag_to_rate(brightness)
+            rate = self.ABmag_to_rate(brightness, filter_name)
 
         # Convert to maximum surface brightness rate by multiplying by maximum flux fraction per pixel
-        return self.extended_source_saturation_exp(rate * self.psf.peak)
+        return self.extended_source_saturation_exp(rate * self.psf.peak, filter_name)
 
     def exp_time_sequence(self,
+                          filter_name,
                           bright_limit=None,
                           shortest_exp_time=None,
                           longest_exp_time=None,
@@ -733,6 +795,7 @@ class Imager:
         calculated from the faintest point source that the sequence is intended to detect.
 
         Args:
+            filter_name: name of the optical filter in use
             bright_limit (Quantity, optional): brightness in ABmag of the brightest point sources that we want to avoid
                 saturating on, will be used to calculate a suitable shortest exposure time. Optional, but one and only
                 one of bright_limit and shortest_exp_time must be specified.
@@ -751,6 +814,9 @@ class Imager:
             Quantity: sequence of sub exposure times
         """
         # First verify all the inputs
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
+
         if bool(bright_limit) == bool(shortest_exp_time):
             raise ValueError("One and only one of bright_limit and shortest_exp_time must be specified!")
 
@@ -763,7 +829,7 @@ class Imager:
 
         if bright_limit:
             # First calculate exposure time that will just saturate on the brightest sources.
-            shortest_exp_time = self.point_source_saturation_exp(bright_limit)
+            shortest_exp_time = self.point_source_saturation_exp(bright_limit, filter_name)
         else:
             shortest_exp_time = ensure_unit(shortest_exp_time, u.second)
 
@@ -772,6 +838,7 @@ class Imager:
         if shortest_exp_time >= longest_exp_time:
             if faint_limit:
                 total_exp_time = self.point_source_etc(brightness=faint_limit,
+                                                       filter_name=filter_name,
                                                        sub_exp_time=longest_exp_time,
                                                        snr_target=snr_target)
                 num_long_exp = int(total_exp_time / longest_exp_time)
@@ -799,6 +866,7 @@ class Imager:
             num_long_exp = 0
             # Signals and noises from each of the sub exposures in the HDR sequence
             signals, noises = self.point_source_signal_noise(brightness=faint_limit,
+                                                             filter_name=filter_name,
                                                              sub_exp_time=u.Quantity(exp_times),
                                                              total_exp_time=u.Quantity(exp_times))
             # Running totals
@@ -809,6 +877,7 @@ class Imager:
             while net_signal / net_noise_squared**0.5 < snr_target:
                 num_long_exp += 1
                 signal, noise = self.point_source_signal_noise(brightness=faint_limit,
+                                                               filter_name=filter_name,
                                                                sub_exp_time=longest_exp_time,
                                                                total_exp_time=longest_exp_time)
                 net_signal += signal
@@ -820,7 +889,7 @@ class Imager:
 
         return exp_times
 
-    def snr_vs_ABmag(self, exp_times, magnitude_interval=0.02 * u.ABmag, snr_target=1.0, plot=None):
+    def snr_vs_ABmag(self, exp_times, filter_name, magnitude_interval=0.02 * u.ABmag, snr_target=1.0, plot=None):
         """
         Calculates PSF fitting signal to noise ratio as a function of point source brightness for the combined data
         resulting from a given sequence of sub exposures, and optionally generates a plot of the results. Automatically
@@ -829,6 +898,7 @@ class Imager:
 
         Args:
             exp_times (Quantity): 1D array of the lengths of the sub exposures
+            filter_name: name of the optical filter in use
             magnitude_interval (Quantity, optional, default 0.02 mag(AB)): step between consecutive brightness values
             snr_target (optional, default 1.0): signal to noise threshold used to set faint limit of magnitude range
             plot (optional): filename for the plot of SNR vs magnitude. If not given no plots will be generated.
@@ -842,13 +912,15 @@ class Imager:
             # All exposures the same length, use direct calculation.
 
             # Magnitudes ranging from the sub exposure saturation limit to a SNR of 1 in the combined data.
-            magnitudes = np.arange(self.point_source_saturation_mag(longest_exp_time.value),
+            magnitudes = np.arange(self.point_source_saturation_mag(longest_exp_time.value, filter_name),
                                    self.point_source_limit(total_exp_time=exp_times.sum(),
+                                                           filter_name=filter_name,
                                                            sub_exp_time=longest_exp_time,
                                                            snr_target=snr_target).value,
                                    magnitude_interval.value) * u.ABmag
             # Calculate SNR directly.
             snrs = self.point_source_snr(brightness=magnitudes,
+                                         filter_name=filter_name,
                                          total_exp_time=exp_times.sum(),
                                          sub_expt_time=longest_exp_time)
 
@@ -857,8 +929,9 @@ class Imager:
             # Have a range of exposure times.
             # Magnitudes ranging from saturation limit of the shortest sub exposure to the SNR of 1 limit for a non-HDR
             # sequence of the same total exposure time.
-            magnitudes = np.arange(self.point_source_saturation_mag(exp_times.min()).value,
+            magnitudes = np.arange(self.point_source_saturation_mag(exp_times.min(), filter_name).value,
                                    self.point_source_limit(total_exp_time=exp_times.sum(),
+                                                           filter_name=filter_name,
                                                            sub_exp_time=longest_exp_time,
                                                            snr_target=snr_target).value,
                                    magnitude_interval.value) * u.ABmag
@@ -873,6 +946,7 @@ class Imager:
             # Signal to noise for each individual exposure in the HDR block
             for exp_time in exp_times[hdr_exposures]:
                 signals, noises = self.point_source_signal_noise(brightness=magnitudes,
+                                                                 filter_name=filter_name,
                                                                  total_exp_time=exp_time,
                                                                  sub_exp_time=exp_time)
                 total_signals += signals
@@ -881,6 +955,7 @@ class Imager:
             # Direct calculation for the repeated exposures
             num_long_exps = (exp_times == longest_exp_time).sum()
             signals, noises = self.point_source_signal_noise(brightness=magnitudes,
+                                                             filter_name=filter_name,
                                                              total_exp_time=num_long_exps * longest_exp_time,
                                                              sub_exp_time=longest_exp_time)
             total_signals += signals
@@ -891,6 +966,7 @@ class Imager:
         if plot:
             if hdr:
                 non_hdr_snrs = self.point_source_snr(brightness=magnitudes,
+                                                     filter_name=filter_name,
                                                      total_exp_time=exp_times.sum(),
                                                      sub_exp_time=longest_exp_time)
             plt.subplot(2, 1, 1)
@@ -916,35 +992,50 @@ class Imager:
 
         return magnitudes.to(u.ABmag), snrs.to(u.dimensionless_unscaled)
 
-    def _is_saturated(self, rate, sub_exp_time, n_sigma=3.0):
+    def _is_saturated(self, rate, sub_exp_time, filter_name, n_sigma=3.0):
         # Total electrons per pixel from source, sky and dark current
-        electrons_per_pixel = (rate + self.sky_rate + self.camera.dark_current) * sub_exp_time
+        electrons_per_pixel = (rate + self.sky_rate[filter_name] + self.camera.dark_current) * sub_exp_time
         # Consider saturated if electrons per pixel is closer than n sigmas of noise to the saturation level
         return electrons_per_pixel > self.camera.saturation_level - n_sigma * self.camera.max_noise
 
     def _efficiencies(self):
-        # Fine wavelength grid spanning range of filter transmission profile
-        waves = np.arange(self.band.wavelengths.value.min(), self.band.wavelengths.value.max(), 1) * u.nm
+        # Fine wavelength grid spaning maximum range of instrument response
+        waves = np.arange(self.camera.wavelengths.value.min(), self.camera.wavelengths.value.max(), 1) * u.nm
+        self.wavelengths = waves
 
-        # Interpolate throughput, filter transmission and QE to new grid
+        # Sensitivity integrals for each filter bandpass
+        self._iminus1 = {}
+        self._iminus2 = {}
+        # End to end efficiency as a function of wavelegth for each filter bandpass
+        self.efficiencies = {}
+        # Mean end to end efficiencies for each filter bandpass
+        self.efficiency = {}
+        # Mean wavelength for each filter bandpass
+        self.mean_wave = {}
+        # Pivot wavelengths for each filter bandpass
+        self.pivot_wave = {}
+        # Bandwidths for each filter bandpass (STScI definition)
+        self.bandwidth = {}
+
+        # Interpolators for throughput and QE. Will move these into the Optics and Camera classes later.
         tau = interp1d(self.optic.wavelengths, self.optic.throughput, kind='linear', fill_value='extrapolate')
         qe = interp1d(self.camera.wavelengths, self.camera.QE, kind='linear', fill_value='extrapolate')
 
-        # End-to-end efficiency. Need to put units back after interpolation
-        effs = tau(waves) * self.band.transmission(waves) * qe(waves) * u.electron / u.photon
+        for name, band in self.filters.items():
+            # End-to-end efficiency. Need to put units back after interpolation
+            effs = tau(waves) * band.transmission(waves) * qe(waves) * u.electron / u.photon
 
-        # Band averaged efficiency, effective wavelengths, bandwidth (STSci definition), flux_integral
-        i0 = np.trapz(effs, x=waves)
-        i1 = np.trapz(effs * waves, x=waves)
-        self._iminus1 = np.trapz(effs / waves, x=waves)  # This one is useful later
-        self._iminus2 = np.trapz(effs / waves**2, x=waves)
+            # Band averaged efficiency, effective wavelengths, bandwidth (STSci definition), flux_integral
+            i0 = np.trapz(effs, x=waves)
+            i1 = np.trapz(effs * waves, x=waves)
+            self._iminus1[name] = np.trapz(effs / waves, x=waves)  # This one is useful later
+            self._iminus2[name] = np.trapz(effs / waves**2, x=waves)
 
-        self.wavelengths = waves
-        self.efficiencies = effs
-        self.efficiency = i0 / (waves[-1] - waves[0])
-        self.mean_wave = i1 / i0
-        self.pivot_wave = (i1 / self._iminus1)**0.5
-        self.bandwidth = i0 / effs.max()
+            self.efficiencies[name] = effs
+            self.efficiency[name] = i0 / (waves[-1] - waves[0])
+            self.mean_wave[name] = i1 / i0
+            self.pivot_wave[name] = (i1 / self._iminus1[name])**0.5
+            self.bandwidth[name] = i0 / effs.max()
 
     def _gamma0(self):
         """

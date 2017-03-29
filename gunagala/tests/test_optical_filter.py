@@ -17,7 +17,7 @@ def optical_filter(request):
                                             'peak': 0.95},
                           sky_mu=20.5 * u.ABmag)
     elif request.param == 'butterworth':
-        bandpass = Filter(butterworth_params={'wave1': 708 * u.nm,
+        bandpass = Filter(butterworth_params={'wave1': 700 * u.nm,
                                               'wave2': 855.5,
                                               'order': 3,
                                               'peak': 0.95},
@@ -28,7 +28,7 @@ def optical_filter(request):
     return bandpass
 
 
-def test_filter_table(optical_filter):
+def test_filter(optical_filter):
     assert isinstance(optical_filter, Filter)
     waves = (0.3, 0.4, 0,5, 0,6, 0,7, 0.8, 0.9, 1.0, 1.1) * u.um
     trans = optical_filter.transmission(waves)
@@ -37,14 +37,15 @@ def test_filter_table(optical_filter):
     assert trans.unit == u.dimensionless_unscaled
     assert (trans <= 1).all()
     assert (trans >= 0).all()
+    assert trans.max() > 0.9 * u.dimensionless_unscaled
 
 
 def test_filter_bad():
     with pytest.raises(ValueError):
         Filter(transmission_filename='astrodon_g.csv',
                chebyshev_params={'wave1': 0.700 * u.micron,
-                                            'wave2': 855.5,
-                                            'order': 50,
-                                            'ripple': 0.14,
-                                            'peak': 0.95},
+                                 'wave2': 855.5,
+                                 'order': 50,
+                                 'ripple': 0.14,
+                                 'peak': 0.95},
                sky_mu=21.5 * u.ABmag)
