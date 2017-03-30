@@ -1040,7 +1040,7 @@ class Imager:
 
     def _efficiencies(self):
         # Fine wavelength grid spaning maximum range of instrument response
-        waves = np.arange(self.camera.wavelengths.value.min(), self.camera.wavelengths.value.max(), 0.1) * u.nm
+        waves = np.arange(self.camera.wavelengths.value.min(), self.camera.wavelengths.value.max(), 0.05) * u.nm
         self.wavelengths = waves
 
         # Sensitivity integrals for each filter bandpass

@@ -88,15 +88,15 @@ filters:
 
     ase_i1:
         chebyshev_params:
-            wave1: 700.0 # nm
-            wave2: 850.0 # nm
+            wave1: 687.8 # nm
+            wave2: 855.5 # nm
             order: 50
             ripple: 0.14
             peak: 0.95
 
     ase_i2:
         chebyshev_params:
-            wave1: 700.0 # nm
+            wave1: 693.3 # nm
             wave2: 855.5 # nm
             order: 50
             ripple: 0.14
@@ -104,8 +104,8 @@ filters:
 
     ase_i3:
         chebyshev_params:
-            wave1: 700.0 # nm
-            wave2: 861.0 # nm
+            wave1: 698.8 # nm
+            wave2: 855.5 # nm
             order: 50
             ripple: 0.14
             peak: 0.95
@@ -166,8 +166,38 @@ imagers:
         num_imagers: 5
         num_per_computer: 5
 
-    ase_e2v:
+    ase_90mm:
         optic: ase90
+        camera: cis115
+        filters:
+            - ase_i1
+            - ase_i2
+            - ase_i3
+            - ase_z1
+            - ase_z2
+            - ase_z3
+        psf: 2as
+        sky: ZL
+        num_imagers: 1
+        num_per_computer: 1
+
+    ase_90mmx3:
+        optic: ase90
+        camera: cis115
+        filters:
+            - ase_i1
+            - ase_i2
+            - ase_i3
+            - ase_z1
+            - ase_z2
+            - ase_z3
+        psf: 2as
+        sky: ZL
+        num_imagers: 3
+        num_per_computer: 1
+
+    ase_160mm:
+        optic: ase160
         camera: cis115
         filters:
             - ase_i1

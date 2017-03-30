@@ -33,7 +33,6 @@ class Optic:
 
         self.focal_length = ensure_unit(focal_length, u.mm)
 
-        print(os.path.join(data_dir, throughput_filename))
         tau_data = Table.read(get_pkg_data_filename(os.path.join(data_dir, throughput_filename)))
 
         if not tau_data['Wavelength'].unit:
