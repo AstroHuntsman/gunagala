@@ -16,6 +16,7 @@ from .optic import Optic
 from .optical_filter import Filter
 from .camera import Camera
 from .psf import PSF, Moffat_PSF
+from .sky import Sky, Simple, ZodiacalLight
 from .config import load_config
 from .utils import ensure_unit
 
@@ -39,6 +40,7 @@ def create_imagers(config=None):
     cameras = dict()
     filters = dict()
     psfs = dict()
+    skys = dict()
     imagers = dict()
 
     # Setup imagers
@@ -89,10 +91,21 @@ def create_imagers(config=None):
         assert issubclass(globals()[psf_info['model']], PSF)
         psf = globals()[psf_info['model']](**psf_info)
 
+        sky_name = imager_info['sky']
+        try:
+            # Try to get one from the cache
+            sky = skys[sky_name]
+        except KeyError:
+            # Create sky for this imagers
+            sky_info = config['skys'][sky_name]
+            assert issubclass(globals()[sky_info['model']], Sky)
+            sky = globals()[sky_info['model']](**sky_info)
+
         imagers[name] = Imager(optic,
                                camera,
                                bands,
                                psf,
+                               sky,
                                imager_info.get('num_imagers', 1),
                                imager_info.get('num_per_computer', 1))
     return imagers
@@ -100,7 +113,7 @@ def create_imagers(config=None):
 
 class Imager:
 
-    def __init__(self, optic, camera, filters, psf, num_imagers=1, num_per_computer=1):
+    def __init__(self, optic, camera, filters, psf, sky, num_imagers=1, num_per_computer=1):
         """
         Class representing an astronomical imaging system, including optics, optical filters and camera. Also includes
         a point spread function (PSF) model. It can also be used to represent an array of identical co-aligned imagers
@@ -111,6 +124,7 @@ class Imager:
             camera (camera.Camera): An instance of the Camera class
             filters (dict): A dictionary containing instances of the filter.Filter class
             psf (psf.PSF): An instance of the PSF class
+            sky (sky.Sky): An instance of the Sky class
             num_imagers (int, optional): to represent an array of identical, co-aligned imagers specify the number here
             num_per_computer (int, optional): number of cameras connected to each computer. Used in situations where
                 multiple cameras must be readout sequentially so the effective readout time is equal to the readout
@@ -126,12 +140,15 @@ class Imager:
                 raise ValueError("'{}' is not an instance of the Filter class!".format(band))
         if not isinstance(psf, PSF):
             raise ValueError("'{}' is not an instance of the PSF class!".format(psf))
+        if not isinstance(sky, Sky):
+            raise ValueError("'{}' is not an instance of the Sky class!".format(sky))
 
         self.optic = optic
         self.camera = camera
         self.filter_names = filters.keys()
         self.filters = filters
         self.psf = psf
+        self.sky = sky
         self.num_imagers = int(num_imagers)
         self.num_per_computer = int(num_per_computer)
 
@@ -159,8 +176,30 @@ class Imager:
         # Calculate end to end efficiencies, etc.
         self._efficiencies()
 
-        # Calculate sky count rate for later use
-        self.sky_rate = {name: self.SB_to_rate(band.sky_mu, name) for name, band in self.filters.items()}
+        # Calculate sky count rates for later use
+        self.sky_rate = {}
+        for filter_name in self.filter_names:
+            # Get surface brightness from sky model
+            sb = sky.surface_brightness(filter_name=filter_name)
+            if callable(sb):
+                # Got a callable back, this should give us surface brightness as a function of wavelength
+                surface_brightness = sb(self.wavelengths)
+
+                # Work out what *sort* of surface brightness we got and do something appropriate
+                try:
+                    surface_brightness = surface_brightness.to(u.photon / (u.second * u.m**2 * u.arcsecond**2 * u.nm))
+                except u.UnitConversionError:
+                    raise ValueError("I don't know what to do with this!")
+                else:
+                    # Got photon spectral flux density. Integrate with product of efficiency, aperture area, pixel area
+                    sky_rate = np.trapz(surface_brightness *
+                                        self.efficiencies[filter_name] *
+                                        self.optic.aperture_area *
+                                        self.pixel_area, x=self.wavelengths)
+                    self.sky_rate[filter_name] = sky_rate.to(u.electron / (u.second * u.pixel))
+            else:
+                # Not a callable, should be a Simple sky model which just returns AB magnitudes per square arcsecond
+                self.sky_rate[filter_name] = self.SB_to_rate(sb, filter_name)
 
     def extended_source_signal_noise(self, surface_brightness, filter_name, total_exp_time, sub_exp_time,
                                      calc_type='per pixel', saturation_check=True, binning=1):
@@ -1001,7 +1040,7 @@ class Imager:
 
     def _efficiencies(self):
         # Fine wavelength grid spaning maximum range of instrument response
-        waves = np.arange(self.camera.wavelengths.value.min(), self.camera.wavelengths.value.max(), 1) * u.nm
+        waves = np.arange(self.camera.wavelengths.value.min(), self.camera.wavelengths.value.max(), 0.1) * u.nm
         self.wavelengths = waves
 
         # Sensitivity integrals for each filter bandpass

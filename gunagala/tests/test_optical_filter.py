@@ -7,21 +7,18 @@ from ..optical_filter import Filter
 @pytest.fixture(scope='module', params=('table', 'chebyshev', 'butterworth'))
 def optical_filter(request):
     if request.param == 'table':
-        bandpass = Filter(transmission_filename='astrodon_g.csv',
-                          sky_mu=22.5 * u.ABmag)
+        bandpass = Filter(transmission_filename='astrodon_g.csv')
     elif request.param == 'chebyshev':
         bandpass = Filter(chebyshev_params={'wave1': 0.700 * u.micron,
                                             'wave2': 855.5,
                                             'order': 50,
                                             'ripple': 0.14,
-                                            'peak': 0.95},
-                          sky_mu=20.5 * u.ABmag)
+                                            'peak': 0.95})
     elif request.param == 'butterworth':
         bandpass = Filter(butterworth_params={'wave1': 700 * u.nm,
                                               'wave2': 855.5,
-                                              'order': 3,
-                                              'peak': 0.95},
-                          sky_mu=20.5 * u.ABmag)
+                                              'order': 250,
+                                              'peak': 0.95})
     else:
         pytest.fail("Unknown filter type {}!".format(request.param))
 
@@ -30,7 +27,7 @@ def optical_filter(request):
 
 def test_filter(optical_filter):
     assert isinstance(optical_filter, Filter)
-    waves = (0.3, 0.4, 0,5, 0,6, 0,7, 0.8, 0.9, 1.0, 1.1) * u.um
+    waves = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1) * u.um
     trans = optical_filter.transmission(waves)
     assert isinstance(trans, u.Quantity)
     assert len(trans) == len(waves)
@@ -47,5 +44,4 @@ def test_filter_bad():
                                  'wave2': 855.5,
                                  'order': 50,
                                  'ripple': 0.14,
-                                 'peak': 0.95},
-               sky_mu=21.5 * u.ABmag)
+                                 'peak': 0.95})

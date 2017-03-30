@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from scipy.interpolate import RectSphereBivariateSpline, SmoothBivariateSpline
+from scipy.interpolate import interp1d, RectSphereBivariateSpline, SmoothBivariateSpline
 
 import astropy.io.fits as fits
 import astropy.units as u
@@ -9,16 +9,57 @@ from astropy.coordinates import SkyCoord, GeocentricTrueEcliptic, get_sun, Angle
 from astropy.time import Time
 from astropy.utils.data import get_pkg_data_filename
 
+from .utils import ensure_unit
 
 sun_location = 'ftp://ftp.stsci.edu/cdbs/grid/k93models/standards/sun_castelli.fits'
 
 
-class ZodiacalLight:
-    """
-    Class representing the Zodiacal Light sky background.
-    Includes methods that return the absolute surface brightness spectral flux density at the ecliptic poles as
-    well as the relative brightness variations as a function of position on the sky.
-    """
+class Sky:
+    def __init__(self):
+        """
+        Abstract base class for sky background models
+        """
+        pass
+
+    def surface_brightness(*args, **kwargs):
+        raise NotImplementError
+
+
+class Simple(Sky):
+
+    def __init__(self, surface_brightness, **kwargs):
+        """
+        Simple sky background model using fixed, uniform, pre-determined surface brightness values for a selection
+        of filter bands.
+
+        Args:
+            surface_brightness (dict): dictionary containing filter_name, surface brightness key, value pairs. The
+                surface brightnesses should be expressed in AB magnitudes ('per square arcsecond')
+        """
+        self._surface_brightness = {}
+
+        for filter_name, sb in surface_brightness.items():
+            self._surface_brightness[filter_name] = ensure_unit(sb, u.ABmag)
+
+    def surface_brightness(self, filter_name):
+        """
+        Returns the pre-determined sky surface brightness value for a given named filter
+
+        Args:
+            filter_name: name of the optical filter in use
+
+        Returns:
+            Quantity: sky surface brightness in AB magnitude units ('per square arcsecond')
+        """
+        try:
+            sb = self._surface_brightness[filter_name]
+        except KeyError:
+            raise ValueError("Sky model has no surface brightness value for filter '{}'!".format(filter_name))
+
+        return sb
+
+
+class ZodiacalLight(Sky):
     # Parameters for the zodiacal light spectrum
 
     # Colina, Bohlin & Castelli solar spectrum is normalised to V band flux
@@ -30,7 +71,7 @@ class ZodiacalLight:
              u.arcsecond**-2 * 10**(-0.01)
     zl_normalisation = zl_nep / solar_normalisation
     # Central wavelength for reddening/normalisation
-    lambda_c = 0.5 * u.micron
+    lambda_c = 0.5 * u.um
     # Aldering reddening parameters
     f_blue = 0.9
     f_red = 0.48
@@ -60,11 +101,28 @@ class ZodiacalLight:
                          [196, 192, 179, 165, 151, 141, 131, 104, 82, 72], \
                          [230, 212, 195, 178, 163, 148, 134, 105, 83, 72]]).transpose()
 
-
-    def __init__(self, solar_path=get_pkg_data_filename('data/sky_data/sun_castelli.fits')):
+    def __init__(self, solar_path=get_pkg_data_filename('data/sky_data/sun_castelli.fits'), **kwargs):
+        """
+        Class representing the Zodiacal Light sky background.
+        Includes methods that return the absolute surface brightness spectral flux density at the ecliptic poles as
+        well as the relative brightness variations as a function of position on the sky.
+        """
         # Pre-calculate zodiacal light spectrum for later use.
         self._calculate_spectrum(solar_path)
         self._calculate_spatial()
+
+
+    def surface_brightness(self, **kwargs):
+        """
+        Returns the Zodiacal Light ecliptic pole surface brightness in photon spectral flux density units
+        """
+        # Interpolator strips units, keep them safe for later...
+        unit = self.photon_sfd.unit
+        # Make a wavelength interpolator of photon SFD
+        interpolator = interp1d(self.waves, self.photon_sfd, kind='linear', fill_value='extrapolate')
+        # Return function for calculating photon SFD at arbitrary wavelengths
+        return lambda x: interpolator(x.to(u.um).value) * unit
+
 
     def _calculate_spectrum(self, solar_path):
         """
@@ -76,11 +134,11 @@ class ZodiacalLight:
         # sfd = spectral flux density
         sun_sfd = sun[1].data['FLUX'] * u.erg * u.second**-1 * u.cm**-2 * u.Angstrom**-1
 
-        self.waves = sun_waves.to(u.micron)
+        self.waves = sun_waves.to(u.um)
 
         # Covert to zodiacal light spectrym by following the normalisation and reddening
         # prescription of Leinert et al (1997) with the revised parameters from
-        # Aldering (2001), as used in the HST ETC (Giavalsico, Sahi, Bohlin (2202)).
+        # Aldering (2001), as used in the HST ETC (Giavalsico, Sahi, Bohlin (2002)).
 
         # Reddening factor
         rfactor = np.where(sun_waves < ZodiacalLight.lambda_c, \
@@ -89,11 +147,11 @@ class ZodiacalLight:
         # Apply normalisation and reddening
         sfd = sun_sfd * ZodiacalLight.zl_normalisation * rfactor
         # #DownWithErgs
-        self.sfd = sfd.to(u.Watt * u.m**-2 * u.arcsecond**-2 * u.micron**-1)
-        # Also calculate in photon spectral flux density units. Fudge needed because equivalencies
+        self.sfd = sfd.to(u.Watt * u.m**-2 * u.arcsecond**-2 * u.um**-1)
+        # Also calculate in photon spectral flux density units. Fudge needed because spectral density equivalencies
         # don't currently include surface brightness units.
         fudge = sfd * u.arcsecond**2
-        fudge = fudge.to(u.photon * u.second**-1 * u.m**-2 *  u.micron**-1, equivalencies=u.spectral_density(self.waves))
+        fudge = fudge.to(u.photon * u.second**-1 * u.m**-2 *  u.um**-1, equivalencies=u.spectral_density(self.waves))
         self.photon_sfd = fudge / u.arcsecond**2
 
     def _calculate_spatial(self):

@@ -76,19 +76,15 @@ cameras:
 filters:
     g:
         transmission_filename: astrodon_g.csv
-        sky_mu: 22.5 # AB mag per square arcsecond
 
     r:
         transmission_filename: astrodon_r.csv
-        sky_mu: 21.5 # AB mag per square arcsecond
 
     Ha_3nm:
         transmission_filename: astrodon_ha_3nm.csv
-        sky_mu: 20.5 # AB mag per square arcsecond
 
     Ha_5nm:
         transmission_filename: astrodon_ha_5nm.csv
-        sky_mu: 20.5 # AB mag per square arcsecond
 
     ase_i1:
         chebyshev_params:
@@ -97,7 +93,6 @@ filters:
             order: 50
             ripple: 0.14
             peak: 0.95
-        sky_mu: 20.5
 
     ase_i2:
         chebyshev_params:
@@ -106,7 +101,6 @@ filters:
             order: 50
             ripple: 0.14
             peak: 0.95
-        sky_mu: 20.5
 
     ase_i3:
         chebyshev_params:
@@ -115,7 +109,6 @@ filters:
             order: 50
             ripple: 0.14
             peak: 0.95
-        sky_mu: 20.5
 
     ase_z1:
         chebyshev_params:
@@ -124,7 +117,6 @@ filters:
             order: 50
             ripple: 0.14
             peak: 0.95
-        sky_mu: 19.5
 
     ase_z2:
         chebyshev_params:
@@ -133,7 +125,6 @@ filters:
             order: 50
             ripple: 0.14
             peak: 0.95
-        sky_mu: 19.5
 
     ase_z3:
         chebyshev_params:
@@ -142,13 +133,26 @@ filters:
             order: 50
             ripple: 0.14
             peak: 0.95
-        sky_mu: 19.5
 
 psfs:
     2as:
         model: Moffat_PSF
         FWHM: 2 # arcsecond
         shape: 2.5
+
+
+skys:
+    SSO:
+        model: Simple
+        surface_brightness:  # AB mag 'per square arcsecond'
+            g: 22.5
+            r: 21.5
+            Ha_3nm: 20.5
+            Ha_5nm: 20.5
+
+    ZL:
+        model: ZodiacalLight
+
 
 imagers:
     canon_sbig:
@@ -158,6 +162,7 @@ imagers:
             - g
             - r
         psf: 2as
+        sky: SSO
         num_imagers: 5
         num_per_computer: 5
 
@@ -172,5 +177,6 @@ imagers:
             - ase_z2
             - ase_z3
         psf: 2as
+        sky: ZL
         num_imagers: 1
         num_per_computer: 1

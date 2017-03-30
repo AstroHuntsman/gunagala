@@ -6,6 +6,7 @@ from ..optic import Optic
 from ..optical_filter import Filter
 from ..camera import Camera
 from ..psf import PSF, Moffat_PSF
+from ..sky import Sky, Simple, ZodiacalLight
 from ..imager import Imager
 from ..imager import create_imagers
 
@@ -36,19 +37,30 @@ def ccd():
 
 @pytest.fixture(scope='module')
 def filters():
-    g = Filter(transmission_filename='astrodon_g.csv', sky_mu=22.5 * u.ABmag)
+    g = Filter(transmission_filename='astrodon_g.csv')
     r = Filter(chebyshev_params={'wave1': 550 * u.nm,
                                  'wave2': 700 * u.nm,
                                  'order': 50,
                                  'ripple': 0.14,
-                                 'peak': 0.95},
-                sky_mu=21.5 * u.ABmag)
+                                 'peak': 0.95})
     return {'g': g, 'r': r}
 
 
 @pytest.fixture(scope='module', params=('g', 'r'))
 def filter_name(request):
     return request.param
+
+
+@pytest.fixture(scope='module', params=('SSO', 'ZL'))
+def sky(request):
+    if request.param == 'SSO':
+        sky = Simple(surface_brightness={'g': 22.5, 'r': 21.5})
+    elif request.param == 'ZL':
+        sky = ZodiacalLight()
+    else:
+        pytest.fail("Unknown sky type '{}'!".format(request.param))
+
+    return sky
 
 
 @pytest.fixture(scope='module')
@@ -58,8 +70,8 @@ def psf():
 
 
 @pytest.fixture(scope='module')
-def imager(lens, ccd, filters, psf):
-    imager = Imager(optic=lens, camera=ccd, filters=filters, psf=psf, num_imagers=5, num_per_computer=5)
+def imager(lens, ccd, filters, psf, sky):
+    imager = Imager(optic=lens, camera=ccd, filters=filters, psf=psf, sky=sky, num_imagers=5, num_per_computer=5)
     return imager
 
 
@@ -145,13 +157,13 @@ def test_imager_extended_binning(imager, filter_name):
     assert snr_4_pix == 2 * snr_1_pix
 
     # Binned exposure time given surface brightness and SNR should match original exposure time.
-    assert t_exp == imager.extended_source_etc(surface_brightness=sb,
-                                               filter_name=filter_name,
-                                               snr_target=snr_4_pix,
-                                               sub_exp_time=t_sub,
-                                               saturation_check=False,
-                                               binning=4)
-
+    assert t_exp.to(u.second).value == pytest.approx(imager.extended_source_etc(surface_brightness=sb,
+                                                                                filter_name=filter_name,
+                                                                                snr_target=snr_4_pix,
+                                                                                sub_exp_time=t_sub,
+                                                                                saturation_check=False,
+                                                                                binning=4).to(u.second).value,
+                                                                                rel=0.1)
 
 def test_imager_extended_arrays(imager, filter_name):
     # SNR functions should handle arrays values for any of the main arguments.
@@ -500,8 +512,6 @@ def test_imager_sequence(imager, filter_name):
     # Shortest exposure time should be less than the time to saturation on the brightest targets
     assert t_exps[0] <= imager.point_source_saturation_exp(brightness=brightest, filter_name=filter_name)
 
-    print(filter_name, imager.point_source_saturation_exp(brightness=brightest, filter_name=filter_name))
-
     # Ratio between exposures should be close to exp_time_ratio (apart from rounding to nearest 0.01 seconds)
     assert (t_exps[1] / t_exps[0]).value == pytest.approx(2, rel=0.1)
 
@@ -512,7 +522,7 @@ def test_imager_sequence(imager, filter_name):
                                             snr_target=5.0,
                                             sub_exp_time=t_max)
     assert t_exps.sum() > non_hdr_t_exp - 5 * u.second
-    assert t_exps.sum().value == pytest.approx(non_hdr_t_exp.value, abs=t_max.value)
+    assert t_exps.sum().value == pytest.approx(non_hdr_t_exp.value, abs=t_max.value * 2)
 
     # Can't set both num_long_exp and faint_limit
     with pytest.raises(ValueError):
@@ -588,7 +598,7 @@ def test_imager_sequence(imager, filter_name):
                                               longest_exp_time=t_max,
                                               faint_limit=faintest,
                                               snr_target=2.5)
-    assert t_exps_low_snr.sum().value == pytest.approx(t_exps.sum().value / 4, rel=0.02)
+    assert t_exps_low_snr.sum().value == pytest.approx(t_exps.sum().value / 4, rel=0.1)
 
 
 def test_imager_snr_vs_mag(imager, filter_name, tmpdir):
