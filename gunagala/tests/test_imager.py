@@ -135,6 +135,74 @@ def test_imager_extended_snr(imager, filter_name):
                                    binning=16)
 
 
+def test_imager_extended_saturation(imager, filter_name):
+    sb = 25 * u.ABmag
+    t_exp = 28 * u.hour
+    t_sub = 28 * u.hour
+
+    # Very long sub-exposure should saturate and give zero signal to noise
+    snr = imager.extended_source_snr(surface_brightness=sb,
+                                     filter_name=filter_name,
+                                     total_exp_time=t_exp,
+                                     sub_exp_time=t_sub)
+    assert snr == 0 * u.dimensionless_unscaled
+
+    # Not if the saturation check is turned off though.
+    snr = imager.extended_source_snr(surface_brightness=sb,
+                                     filter_name=filter_name,
+                                     total_exp_time=t_exp,
+                                     sub_exp_time=t_sub,
+                                     saturation_check=False)
+    assert snr > 0 * u.dimensionless_unscaled
+
+    # Should work with the sky measurement option, too.
+    snr = imager.extended_source_snr(surface_brightness=None,
+                                     filter_name=filter_name,
+                                     total_exp_time=t_exp,
+                                     sub_exp_time=t_sub)
+    assert snr == 0 * u.dimensionless_unscaled
+
+    # ETC should also give zero
+    t = imager.extended_source_etc(surface_brightness=sb,
+                                   filter_name=filter_name,
+                                   sub_exp_time=t_sub,
+                                   snr_target=3.0)
+    assert t == 0 * u.second
+
+    t = imager.extended_source_etc(surface_brightness=sb,
+                                   filter_name=filter_name,
+                                   sub_exp_time=t_sub,
+                                   snr_target=3.0,
+                                   saturation_check=False)
+    assert t > 0 * u.second
+
+    t = imager.extended_source_etc(surface_brightness=None,
+                                   filter_name=filter_name,
+                                   sub_exp_time=t_sub,
+                                   snr_target=3.0)
+    assert t == 0 * u.second
+
+
+def test_imager_sky_snr(imager, filter_name):
+    t_exp = 28 * u.hour
+    t_sub = 600 * u.second
+
+    # If surface brightness is set to None (or anything False) should get the signal to noise ratio
+    # for measurement of the sky brightness.
+    snr = imager.extended_source_snr(surface_brightness=None,
+                                     filter_name=filter_name,
+                                     total_exp_time=t_exp,
+                                     sub_exp_time=t_sub)
+    assert snr > 0 * u.dimensionless_unscaled
+
+    # Can also do this with the ETC, and should get consistent answers.
+    t = imager.extended_source_etc(surface_brightness=None,
+                                   filter_name=filter_name,
+                                   sub_exp_time=t_sub,
+                                   snr_target=snr * 0.999999999999,)
+    assert t == t_exp
+
+
 def test_imager_extended_binning(imager, filter_name):
     sb = 25 * u.ABmag
     t_exp = 28 * u.hour

@@ -203,11 +203,14 @@ class Imager:
 
     def extended_source_signal_noise(self, surface_brightness, filter_name, total_exp_time, sub_exp_time,
                                      calc_type='per pixel', saturation_check=True, binning=1):
-        """Calculates the signal and noise for an extended source with given surface brightness
+        """Calculates the signal and noise for an extended source with given surface brightness. Alternatively can
+        calculate the signal and noise for measurements of the sky background itself by setting the source
+        surface brightness to None.
 
         Args:
             surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
-                an equivalent count rate in photo-electrons per second per pixel.
+                an equivalent count rate in photo-electrons per second per pixel. Set to None or False to calculate
+                the signal and noise for the sky background.
             filter_name: name of the optical filter in use
             total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
                 multiple of sub_exp_time
@@ -230,15 +233,19 @@ class Imager:
         if calc_type == 'per arcsecond squared' and binning != 1:
             raise ValueError("Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
 
-        if not isinstance(surface_brightness, u.Quantity):
-            surface_brightness = surface_brightness * u.ABmag
-
-        try:
-            # If surface brightness is a count rate this should work
-            rate = surface_brightness.to(u.electron / (u.pixel * u.second))
-        except u.core.UnitConversionError:
-            # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
-            rate = self.SB_to_rate(surface_brightness, filter_name)
+        if surface_brightness:
+            # Given a source brightness
+            if not isinstance(surface_brightness, u.Quantity):
+                surface_brightness = surface_brightness * u.ABmag
+            try:
+                # If surface brightness is a count rate this should work
+                rate = surface_brightness.to(u.electron / (u.pixel * u.second))
+            except u.core.UnitConversionError:
+                # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
+                rate = self.SB_to_rate(surface_brightness, filter_name)
+        else:
+            # Measuring the sky background itself.
+            rate = self.sky_rate[filter_name]
 
         total_exp_time = ensure_unit(total_exp_time, u.second)
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
@@ -250,7 +257,8 @@ class Imager:
 
         # Noise sources (per pixel for single imager)
         signal = (rate * total_exp_time).to(u.electron / u.pixel)
-        sky_counts = self.sky_rate[filter_name] * total_exp_time
+        # If calculating the signal & noise for the sky itself need to avoid double counting it here
+        sky_counts = self.sky_rate[filter_name] * total_exp_time if surface_brightness else 0 * u.electron / u.pixel
         dark_counts = self.camera.dark_current * total_exp_time
         total_read_noise = number_subs**0.5 * self.camera.read_noise
 
@@ -259,7 +267,11 @@ class Imager:
 
         # Saturation check
         if saturation_check:
-            saturated = self._is_saturated(rate, sub_exp_time, filter_name)
+            if surface_brightness:
+                saturated = self._is_saturated(rate, sub_exp_time, filter_name)
+            else:
+                # Sky counts already included in _is_saturated, need to avoid counting them twice
+                saturated = self._is_saturated(0 * u.electron / (u.pixel * u.second), sub_exp_time, filter_name)
             # np.where strips units, need to manually put them back.
             signal = np.where(saturated, 0, signal) * u.electron / u.pixel
             noise = np.where(saturated, 0, noise) * u.electron / u.pixel
@@ -277,11 +289,14 @@ class Imager:
 
     def extended_source_snr(self, surface_brightness, filter_name, total_exp_time, sub_exp_time,
                             calc_type='per pixel', saturation_check=True, binning=1):
-        """ Calculates the signal and noise for an extended source with given surface brightness
+        """ Calculates the signal to noise ratio for an extended source with given surface brightness. Alternatively
+        can calculate the signal to noise for measurements of the sky background itself by setting the source
+        surface brightness to None.
 
         Args:
             surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
-                an equivalent count rate in photo-electrons per second per pixel.
+                an equivalent count rate in photo-electrons per second per pixel. Set to None or False to calculate
+                the signal to noise ratio for the sky background.
             filter_name: name of the optical filter in use
             total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
                 multiple of sub_exp_time
@@ -306,11 +321,13 @@ class Imager:
     def extended_source_etc(self, surface_brightness, filter_name, snr_target, sub_exp_time, calc_type='per pixel',
                             saturation_check=True, binning=1):
         """Calculates the total exposure time required to reach a given signal to noise ratio for a given extended
-        source surface brightness.
+        source surface brightness. Alternatively can calculate the required time for measurements of the sky background
+        itself by setting the source surface brightness to None.
 
         Args:
             surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
-                an equivalent count rate in photo-electrons per second per pixel.
+                an equivalent count rate in photo-electrons per second per pixel. Set to None or False to calculate
+                the required time for the sky background.
             filter_name: name of the optical filter in use
             snr_target: The desired signal-to-noise ratio for the target
             sub_exp_time (Quantity): length of individual sub-exposures
@@ -342,23 +359,36 @@ class Imager:
             # pixel area to convert it to a per pixel value.
             snr_target = snr_target * self.pixel_scale / (u.arcsecond / u.pixel)
 
-        if not isinstance(surface_brightness, u.Quantity):
-            surface_brightness = surface_brightness * u.ABmag
-
-        try:
-            # If surface brightness is a count rate this should work
-            rate = surface_brightness.to(u.electron / (u.pixel * u.second))
-        except u.core.UnitConversionError:
-            # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
-            rate = self.SB_to_rate(surface_brightness, filter_name)
+        if surface_brightness:
+            # Given a source brightness
+            if not isinstance(surface_brightness, u.Quantity):
+                surface_brightness = surface_brightness * u.ABmag
+            try:
+                # If surface brightness is a count rate this should work
+                rate = surface_brightness.to(u.electron / (u.pixel * u.second))
+            except u.core.UnitConversionError:
+                # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
+                rate = self.SB_to_rate(surface_brightness, filter_name)
+        else:
+            # Measuring the sky background itself.
+            rate = self.sky_rate[filter_name]
 
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
 
         # If required total exposure time is much greater than the length of a sub-exposure then
         # all noise sources (including read noise) are proportional to t^0.5 and we can use a
         # simplified expression to estimate total exposure time.
-        noise_squared_rate = ((rate + self.sky_rate[filter_name] + self.camera.dark_current) * (u.electron / u.pixel) +
-                              self.camera.read_noise**2 / sub_exp_time)
+        if surface_brightness:
+            noise_squared_rate = ((rate +
+                                   self.sky_rate[filter_name] +
+                                   self.camera.dark_current) * (u.electron / u.pixel) +
+                                   self.camera.read_noise**2 / sub_exp_time)
+        else:
+            # Avoiding counting sky noise twice when the target is the sky background itself
+            noise_squared_rate = ((rate +
+                                   self.camera.dark_current) * (u.electron / u.pixel) +
+                                   self.camera.read_noise**2 / sub_exp_time)
+
         noise_squared_rate = noise_squared_rate.to(u.electron**2 / (u.pixel**2 * u.second))
         total_exp_time = (snr_target**2 * noise_squared_rate / rate**2).to(u.second)
 
@@ -369,7 +399,12 @@ class Imager:
         number_subs = np.ceil(total_exp_time / sub_exp_time)
 
         if saturation_check:
-            saturated = self._is_saturated(rate, sub_exp_time, filter_name)
+            if surface_brightness:
+                saturated = self._is_saturated(rate, sub_exp_time, filter_name)
+            else:
+                # Sky counts already included in _is_saturated, need to avoid counting them twice
+                saturated = self._is_saturated(0 * u.electron / (u.pixel * u.second), sub_exp_time, filter_name)
+
             number_subs = np.where(saturated, 0, number_subs)
 
         return number_subs * sub_exp_time
