@@ -134,6 +134,22 @@ filters:
             ripple: 0.14
             peak: 0.95
 
+    ase_nb689:
+        chebyshev_params:
+            wave1: 688.5
+            wave2: 689.5
+            order: 100
+            ripple: 0.051
+            peak: 0.95
+
+    ase_nb691:
+        chebyshev_params:
+            wave1: 690.5
+            wave2: 691.5
+            order: 100
+            ripple: 0.05
+            peak: 0.95
+
 psfs:
     2as:
         model: Moffat_PSF
@@ -161,6 +177,8 @@ imagers:
         filters:
             - g
             - r
+            - Ha_3nm
+            - Ha_5nm
         psf: 2as
         sky: SSO
         num_imagers: 5
@@ -176,6 +194,8 @@ imagers:
             - ase_z1
             - ase_z2
             - ase_z3
+            - ase_nb689
+            - ase_nb691
         psf: 2as
         sky: ZL
         num_imagers: 1

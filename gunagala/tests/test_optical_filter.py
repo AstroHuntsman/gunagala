@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 import astropy.units as u
 
 from ..optical_filter import Filter
@@ -27,14 +28,27 @@ def optical_filter(request):
 
 def test_filter(optical_filter):
     assert isinstance(optical_filter, Filter)
-    waves = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1) * u.um
+    waves = np.arange(0.3, 1.1, 0.01) * u.um
     trans = optical_filter.transmission(waves)
     assert isinstance(trans, u.Quantity)
     assert len(trans) == len(waves)
     assert trans.unit == u.dimensionless_unscaled
     assert (trans <= 1).all()
     assert (trans >= 0).all()
-    assert trans.max() > 0.9 * u.dimensionless_unscaled
+
+
+def test_filter_parameters(optical_filter):
+    waves = np.arange(0.3, 1.1, 0.01) * u.um
+    trans = optical_filter.transmission(waves)
+    assert optical_filter.peak == pytest.approx(0.95, abs=0.05)
+    assert optical_filter.lambda_peak.to(u.nm).value == pytest.approx(waves[trans.argmax()].to(u.nm).value,
+                                                                      abs=10)
+    if hasattr(optical_filter, 'wavelengths'):
+        assert isinstance(optical_filter.FWHM, u.Quantity)
+        assert isinstance(optical_filter.lambda_c, u.Quantity)
+    else:
+        assert optical_filter.FWHM.to(u.nm).value == pytest.approx(155.5, rel=0.1)
+        assert optical_filter.lambda_c.to(u.nm).value == pytest.approx((700 + 855.5) / 2, rel=0.1)
 
 
 def test_filter_bad():
