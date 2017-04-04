@@ -163,6 +163,11 @@ class Imager:
         self.field_of_view = (self.camera.resolution * self.pixel_scale)
         self.field_of_view = self.field_of_view.to(u.degree, equivalencies=u.dimensionless_angles())
 
+        # Pass focal plane beam half-cone angles to Filters so that angle of incidence effects on filter transmission
+        # profile will be modelled where appropriate.
+        for filter in self.filters.values():
+            filter.theta_range = self.optic.theta_range
+
         # Construct a simple template WCS to store the focal plane configuration parameters
         self.wcs = WCS(naxis=2)
         self.wcs._naxis1 = self.camera.resolution[0].value

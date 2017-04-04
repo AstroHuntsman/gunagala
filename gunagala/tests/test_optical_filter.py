@@ -26,7 +26,7 @@ def optical_filter(request):
     return bandpass
 
 
-def test_filter(optical_filter):
+def test_init(optical_filter):
     assert isinstance(optical_filter, Filter)
     waves = np.arange(0.3, 1.1, 0.01) * u.um
     trans = optical_filter.transmission(waves)
@@ -37,12 +37,12 @@ def test_filter(optical_filter):
     assert (trans >= 0).all()
 
 
-def test_filter_parameters(optical_filter):
+def test_parameters(optical_filter):
     waves = np.arange(0.3, 1.1, 0.01) * u.um
     trans = optical_filter.transmission(waves)
-    assert optical_filter.peak == pytest.approx(0.95, abs=0.05)
-    assert optical_filter.lambda_peak.to(u.nm).value == pytest.approx(waves[trans.argmax()].to(u.nm).value,
-                                                                      abs=10)
+    assert optical_filter.peak.value == pytest.approx(trans.max().value, abs=0.05)
+#    assert optical_filter.lambda_peak.to(u.nm).value == pytest.approx(waves[trans.argmax()].to(u.nm).value,
+#                                                                      abs=10)
     if hasattr(optical_filter, 'wavelengths'):
         assert isinstance(optical_filter.FWHM, u.Quantity)
         assert isinstance(optical_filter.lambda_c, u.Quantity)
@@ -51,7 +51,28 @@ def test_filter_parameters(optical_filter):
         assert optical_filter.lambda_c.to(u.nm).value == pytest.approx((700 + 855.5) / 2, rel=0.1)
 
 
-def test_filter_bad():
+def test_aoi():
+    band_no_aoi = Filter(chebyshev_params={'wave1': 688.5,
+                                           'wave2': 689.5,
+                                           'order': 100,
+                                           'ripple': 0.05,
+                                           'peak': 0.95})
+
+    band_aoi = Filter(chebyshev_params={'wave1': 688.5,
+                                        'wave2': 689.5,
+                                        'order': 100,
+                                        'ripple': 0.05,
+                                        'peak': 0.95},
+                      apply_aoi=True,
+                      n_eff=1.75,
+                      theta_range=(0, 5) * u.degree)
+
+    assert band_aoi.FWHM > band_no_aoi.FWHM
+    assert band_aoi.lambda_c < band_no_aoi.lambda_c
+    assert band_aoi.peak < band_no_aoi.peak
+
+
+def test_bad():
     with pytest.raises(ValueError):
         Filter(transmission_filename='astrodon_g.csv',
                chebyshev_params={'wave1': 0.700 * u.micron,

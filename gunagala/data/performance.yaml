@@ -82,9 +82,13 @@ filters:
 
     Ha_3nm:
         transmission_filename: astrodon_ha_3nm.csv
+        apply_aoi: True
+        n_eff: 1.75
 
     Ha_5nm:
         transmission_filename: astrodon_ha_5nm.csv
+        apply_aoi: True
+        n_eff: 1.75
 
     ase_i1:
         chebyshev_params:
@@ -139,8 +143,10 @@ filters:
             wave1: 688.5
             wave2: 689.5
             order: 100
-            ripple: 0.051
+            ripple: 0.05
             peak: 0.95
+        apply_aoi: True
+        n_eff: 1.75
 
     ase_nb691:
         chebyshev_params:
@@ -149,6 +155,29 @@ filters:
             order: 100
             ripple: 0.05
             peak: 0.95
+        apply_aoi: True
+        n_eff: 1.75
+
+    ase_nb855:
+        chebyshev_params:
+            wave1: 854.0
+            wave2: 855.0
+            order: 100
+            ripple: 0.05
+            peak: 0.95
+        apply_aoi: True
+        n_eff: 1.75
+
+    ase_nb858:
+        chebyshev_params:
+            wave1: 857.0
+            wave2: 858.0
+            order: 100
+            ripple: 0.05
+            peak: 0.95
+        apply_aoi: True
+        n_eff: 1.75
+
 
 psfs:
     2as:
@@ -184,7 +213,7 @@ imagers:
         num_imagers: 5
         num_per_computer: 5
 
-    ase_90mm:
+    ase_2016:
         optic: ase90
         camera: cis115
         filters:
@@ -194,38 +223,21 @@ imagers:
             - ase_z1
             - ase_z2
             - ase_z3
-            - ase_nb689
-            - ase_nb691
         psf: 2as
         sky: ZL
         num_imagers: 1
         num_per_computer: 1
 
-    ase_90mmx3:
+    ase_2017:
         optic: ase90
         camera: cis115
         filters:
-            - ase_i1
+            - ase_nb689
+            - ase_nb691
             - ase_i2
-            - ase_i3
-            - ase_z1
             - ase_z2
-            - ase_z3
-        psf: 2as
-        sky: ZL
-        num_imagers: 3
-        num_per_computer: 1
-
-    ase_160mm:
-        optic: ase160
-        camera: cis115
-        filters:
-            - ase_i1
-            - ase_i2
-            - ase_i3
-            - ase_z1
-            - ase_z2
-            - ase_z3
+            - ase_nb855
+            - ase_nb858
         psf: 2as
         sky: ZL
         num_imagers: 1

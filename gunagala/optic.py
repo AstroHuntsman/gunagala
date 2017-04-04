@@ -33,6 +33,18 @@ class Optic:
 
         self.focal_length = ensure_unit(focal_length, u.mm)
 
+        self.focal_ratio = (self.focal_length / self.aperture).to(u.dimensionless_unscaled)
+
+        # Calculate beam half-cones angles at the focal plane
+        if central_obstruction == 0 * u.mm:
+            theta_min = 0 * u.radian
+        else:
+            theta_min = np.arctan((self.central_obstruction / 2) / self.focal_length)
+
+        theta_max = np.arctan((self.aperture / 2) / self.focal_length)
+
+        self.theta_range = u.Quantity((theta_min, theta_max)).to(u.degree)
+
         tau_data = Table.read(get_pkg_data_filename(os.path.join(data_dir, throughput_filename)))
 
         if not tau_data['Wavelength'].unit:
