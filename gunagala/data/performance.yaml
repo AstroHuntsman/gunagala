@@ -76,9 +76,13 @@ cameras:
 filters:
     g:
         transmission_filename: astrodon_g.csv
+        apply_aoi: True
+        n_eff: 1.75
 
     r:
         transmission_filename: astrodon_r.csv
+        apply_aoi: True
+        n_eff: 1.75
 
     Ha_3nm:
         transmission_filename: astrodon_ha_3nm.csv
@@ -94,49 +98,61 @@ filters:
         chebyshev_params:
             wave1: 687.8 # nm
             wave2: 855.5 # nm
-            order: 50
-            ripple: 0.14
+            order: 75
+            ripple: 0.10
             peak: 0.95
+        apply_aoi: True
+        n_eff: 1.75
 
     ase_i2:
         chebyshev_params:
             wave1: 693.3 # nm
             wave2: 855.5 # nm
-            order: 50
-            ripple: 0.14
+            order: 75
+            ripple: 0.10
             peak: 0.95
+        apply_aoi: True
+        n_eff: 1.75
 
     ase_i3:
         chebyshev_params:
             wave1: 698.8 # nm
             wave2: 855.5 # nm
-            order: 50
-            ripple: 0.14
+            order: 75
+            ripple: 0.10
             peak: 0.95
+        apply_aoi: True
+        n_eff: 1.75
 
     ase_z1:
         chebyshev_params:
             wave1: 854.0 # nm
             wave2: 1000 # nm
-            order: 50
-            ripple: 0.14
+            order: 75
+            ripple: 0.10
             peak: 0.95
+        apply_aoi: True
+        n_eff: 1.75
 
     ase_z2:
         chebyshev_params:
             wave1: 859.5 # nm
             wave2: 1000 # nm
-            order: 50
-            ripple: 0.14
+            order: 75
+            ripple: 0.10
             peak: 0.95
+        apply_aoi: True
+        n_eff: 1.75
 
     ase_z3:
         chebyshev_params:
             wave1: 865.0 # nm
             wave2: 1000 # nm
-            order: 50
-            ripple: 0.14
+            order: 75
+            ripple: 0.10
             peak: 0.95
+        apply_aoi: True
+        n_eff: 1.75
 
     ase_nb689:
         chebyshev_params:
@@ -183,7 +199,7 @@ psfs:
     2as:
         model: Moffat_PSF
         FWHM: 2 # arcsecond
-        shape: 2.5
+        shape: 4.5
 
 
 skys:
