@@ -12,12 +12,12 @@ optics:
 
     ase90: # Australian Space Eye nominal 90 mm diameter telescope
         aperture: 90.0 # millimtres
-        focal_length: 500.0 # millimetres
+        focal_length: 481.0 # millimetres
         throughput_filename: ase90_throughput.csv # Simplistic model - 7 surfaces at 99.5%
 
     ase160: # Australian Space Eye nominal 160 mm diameter telescope
         aperture: 160 # millimetres
-        focal_length: 500.0 # millimetres
+        focal_length: 481.0 # millimetres
         throughput_filename: ase160_throughput.csv # Simplistic model - 7 surfaces at 99.5%
 
 cameras:
@@ -96,9 +96,9 @@ filters:
 
     ase_i1:
         chebyshev_params:
-            wave1: 687.8 # nm
-            wave2: 855.5 # nm
-            order: 75
+            wave1: 700.0 # nm
+            wave2: 852.5 # nm
+            order: 100
             ripple: 0.10
             peak: 0.95
         apply_aoi: True
@@ -106,9 +106,9 @@ filters:
 
     ase_i2:
         chebyshev_params:
-            wave1: 693.3 # nm
-            wave2: 855.5 # nm
-            order: 75
+            wave1: 700.0 # nm
+            wave2: 856.5 # nm
+            order: 100
             ripple: 0.10
             peak: 0.95
         apply_aoi: True
@@ -116,9 +116,9 @@ filters:
 
     ase_i3:
         chebyshev_params:
-            wave1: 698.8 # nm
-            wave2: 855.5 # nm
-            order: 75
+            wave1: 700.0 # nm
+            wave2: 860.5 # nm
+            order: 100
             ripple: 0.10
             peak: 0.95
         apply_aoi: True
@@ -126,9 +126,9 @@ filters:
 
     ase_z1:
         chebyshev_params:
-            wave1: 854.0 # nm
+            wave1: 853.5 # nm
             wave2: 1000 # nm
-            order: 75
+            order: 100
             ripple: 0.10
             peak: 0.95
         apply_aoi: True
@@ -136,9 +136,9 @@ filters:
 
     ase_z2:
         chebyshev_params:
-            wave1: 859.5 # nm
+            wave1: 857.5 # nm
             wave2: 1000 # nm
-            order: 75
+            order: 100
             ripple: 0.10
             peak: 0.95
         apply_aoi: True
@@ -146,9 +146,9 @@ filters:
 
     ase_z3:
         chebyshev_params:
-            wave1: 865.0 # nm
+            wave1: 861.5 # nm
             wave2: 1000 # nm
-            order: 75
+            order: 100
             ripple: 0.10
             peak: 0.95
         apply_aoi: True
@@ -176,8 +176,8 @@ filters:
 
     ase_nb855:
         chebyshev_params:
-            wave1: 854.0
-            wave2: 855.0
+            wave1: 854.5
+            wave2: 855.5
             order: 100
             ripple: 0.05
             peak: 0.95
@@ -186,8 +186,8 @@ filters:
 
     ase_nb858:
         chebyshev_params:
-            wave1: 857.0
-            wave2: 858.0
+            wave1: 858.5
+            wave2: 859.5
             order: 100
             ripple: 0.05
             peak: 0.95
@@ -248,10 +248,8 @@ imagers:
         optic: ase90
         camera: cis115
         filters:
-            - ase_nb689
-            - ase_nb691
-            - ase_i2
-            - ase_z2
+            - ase_i1
+            - ase_z3
             - ase_nb855
             - ase_nb858
         psf: 2as
