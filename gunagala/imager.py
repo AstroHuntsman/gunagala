@@ -448,7 +448,7 @@ class Imager:
         snr_target = ensure_unit(snr_target, u.dimensionless_unscaled)
         snr_target = snr_target / (self.num_imagers * binning)**0.5
 
-        if calc_type == 'per arcseconds squared':
+        if calc_type == 'per arcsecond squared':
             # If snr_target was given as per arcseconds squared need to mutliply by square root of
             # pixel area to convert it to a per pixel value.
             snr_target = snr_target * self.pixel_scale / (u.arcsecond / u.pixel)
