@@ -286,7 +286,7 @@ class Imager:
         noise = noise * (self.num_imagers * binning)**0.5
 
         # Optionally convert to totals per arcsecond squared.
-        if calc_type == 'per arsecond squared':
+        if calc_type == 'per arcsecond squared':
             signal = signal / self.pixel_area  # e/arcseconds^2
             noise = noise / (self.pixel_scale * u.arcsecond)  # e/arcseconds^2
 
