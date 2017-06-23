@@ -213,9 +213,10 @@ class Imager:
         surface brightness to None.
 
         Args:
-            surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
-                an equivalent count rate in photo-electrons per second per pixel. Set to None or False to calculate
-                the signal and noise for the sky background.
+            surface_brightness (Quantity or callable): surface brightness per arcsecond^2 of the source in ABmag
+                units, or an equivalent count rate in photo-electrons per second per pixel, or a callable object that
+                return surface brightness in spectral flux density units as a function of wavelength. Set to None or
+                False to calculate the signal and noise for the sky background.
             filter_name: name of the optical filter in use
             total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
                 multiple of sub_exp_time
@@ -240,14 +241,31 @@ class Imager:
 
         if surface_brightness:
             # Given a source brightness
-            if not isinstance(surface_brightness, u.Quantity):
-                surface_brightness = surface_brightness * u.ABmag
-            try:
-                # If surface brightness is a count rate this should work
-                rate = surface_brightness.to(u.electron / (u.pixel * u.second))
-            except u.core.UnitConversionError:
-                # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
-                rate = self.SB_to_rate(surface_brightness, filter_name)
+            if callable(surface_brightness):
+                # Surface brightness is a callable, should return surface brightness as a function of wavelength
+                sfd = surface_brightness(self.wavelengths)
+                # Check that the returned Quantity has the right dimensionality, if so calculate rate.
+                try:
+                    sfd = sfd.to(u.photon * u.second**-1 * u.m**-2 * u.arcsecond**-2 * u.nm**-1)
+                except u.UnitConversionError:
+                    raise ValueError("I don't know what to do with this!")
+                else:
+                    rate = np.trapz(sfd *
+                                    self.efficiencies[filter_name] *
+                                    self.optic.aperture_area *
+                                    self.pixel_area, x=self.wavelengths)
+                    rate = rate.to(u.electron * u.second**-1 * u.pixel**-1)
+            else:
+                # Not callable, should be either band averaged surface brightness in AB mag units or a detected
+                # count rate.
+                if not isinstance(surface_brightness, u.Quantity):
+                    surface_brightness = surface_brightness * u.ABmag
+                try:
+                    # If surface brightness is a count rate this should work
+                    rate = surface_brightness.to(u.electron / (u.pixel * u.second))
+                except u.core.UnitConversionError:
+                    # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
+                    rate = self.SB_to_rate(surface_brightness, filter_name)
         else:
             # Measuring the sky background itself.
             rate = self.sky_rate[filter_name]
