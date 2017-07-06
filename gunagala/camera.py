@@ -1,3 +1,6 @@
+"""
+Cameras (stricly the image sensor subsystem, not including optics, optical filters, etc)
+"""
 import os
 
 from astropy import units as u

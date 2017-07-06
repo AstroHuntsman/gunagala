@@ -1,3 +1,7 @@
+"""
+Optics, e.g. a telescope or lens
+"""
+
 import os
 import numpy as np
 

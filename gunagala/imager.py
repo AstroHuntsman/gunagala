@@ -1,3 +1,7 @@
+"""
+Imaging instruments
+"""
+
 import math
 import os
 

@@ -1,3 +1,6 @@
+"""
+Optical filters
+"""
 import os
 
 import numpy as np
