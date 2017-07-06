@@ -10,6 +10,10 @@ calculations and generation of simulated data.
 
 Gunagala is the word for sky in Kamilaroi/Gamilaraay, the language of the Traditional Owners of the land on which Siding Spring Observatory stands (ref: `www.dnathan.com <http://www.dnathan.com/language/gamilaraay/dictionary/GAM_G.HTM#gunagala>`_).
 
+.. image:: https://readthedocs.org/projects/gunagala/badge/?version=latest
+    :target: http://gunagala.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 .. image:: https://travis-ci.org/AstroHuntsman/gunagala.svg
     :target: https://travis-ci.org/AstroHuntsman/gunagala
     :alt: Travis Status
