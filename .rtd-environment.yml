@@ -1,12 +1,12 @@
-name: package-template
+name: gungala
 
 channels:
     - astropy
 
 dependencies:
     - astropy
-    - Cython
+    - scipy
     - matplotlib
-    - numpy
+    - PyYAML
 #   - pip:
 #       - dependency_from_pip
