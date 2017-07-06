@@ -5,10 +5,13 @@ Gunagala
     :target: http://www.astropy.org
     :alt: Powered by Astropy Badge
 
-This is a Python package for modelling the performance of astronomical instruments, including SNR/sensitivity limit/ETC
-calculations and generation of simulated data.  Documentation: http://gunagala.readthedocs.io/
+This is a Python package for modelling the performance of astronomical instruments, including SNR/ETC/sensitivity limit
+calculations and generation of simulated data. The documentation is on readthedocs
+`here <http://gunagala.readthedocs.io/en/latest/gunagala/index.html>`_
 
-Gunagala is the word for sky in Kamilaroi/Gamilaraay, the language of the Traditional Owners of the land on which Siding Spring Observatory stands (ref: `www.dnathan.com <http://www.dnathan.com/language/gamilaraay/dictionary/GAM_G.HTM#gunagala>`_).
+Gunagala is the word for sky in Kamilaroi/Gamilaraay, the language of the Traditional Owners of the land on which Siding
+Spring Observatory stands
+(ref: `www.dnathan.com <http://www.dnathan.com/language/gamilaraay/dictionary/GAM_G.HTM#gunagala>`_).
 
 .. image:: https://readthedocs.org/projects/gunagala/badge/?version=latest
     :target: http://gunagala.readthedocs.io/en/latest/?badge=latest
