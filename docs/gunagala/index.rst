@@ -22,3 +22,4 @@ Reference/API
 =============
 
 .. automodapi:: gunagala
+.. automodapi:: gunagala.imager

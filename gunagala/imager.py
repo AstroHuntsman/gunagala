@@ -711,14 +711,30 @@ class Imager:
         return f_nu.to(u.ABmag, equivalencies=u.equivalencies.spectral_density(self.pivot_wave[filter_name]))
 
     def SB_to_rate(self, mag, filter_name):
-        """ Converts surface brightness AB magnitudes (per arcsecond squared) to photo-electrons per pixel per second.
+        """
+        Converts surface brightness AB magnitudes (per arcsecond squared)
+        to photo-electrons per pixel per second.
 
-        Args:
-            mag (Quantity): source surface brightness in AB magnitudes
-            filter_name: name of the optical filter in use
+        Parameters
+        ----------
+        mag : astropy.units.Quantity
+            Source surface brightness in AB magnitudes
+        filter_name : str
+            Name of the optical filter to use
 
-        Returns:
-            Quantity: corresponding photo-electrons per pixel per second
+        Returns
+        -------
+        rate : astropy.units.Quantity
+            Corresponding photo-electrons per pixel per second
+
+        Notes
+        -----
+        At the time of writing `astropy.units` did not support the
+        commonly used (but dimensionally nonsensical) expression of
+        surface brightness in 'magnitudes per arcsecond squared'.
+        Consequently the `mag` surface brightenss parameter should
+        have a units of `astropy.unit.ABmag`, the `per arcsecond
+        squared` is implied.
         """
         # Use ABmag_to_rate() to convert to electrons per second, then multiply by pixel area
         SB_rate = self.ABmag_to_rate(mag, filter_name) * self.pixel_area / (u.arcsecond**2)
