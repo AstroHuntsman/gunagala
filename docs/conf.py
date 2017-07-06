@@ -105,8 +105,8 @@ release = package.__version__
 
 # Please update these texts to match the name of your package.
 html_theme_options = {
-    'logotext1': 'package',  # white,  semi-bold
-    'logotext2': '-template',  # orange, light
+    'logotext1': 'guna',  # white,  semi-bold
+    'logotext2': 'gala',  # orange, light
     'logotext3': ':docs'   # white,  light
     }
 
@@ -176,4 +176,3 @@ if eval(setup_cfg.get('edit_on_github')):
 
 # -- Resolving issue number to links in changelog -----------------------------
 github_issues_url = 'https://github.com/{0}/issues/'.format(setup_cfg['github_project'])
-

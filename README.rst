@@ -6,7 +6,7 @@ Gunagala
     :alt: Powered by Astropy Badge
 
 This is a Python package for modelling the performance of astronomical instruments, including SNR/sensitivity limit/ETC
-calculations and generation of simulated data.
+calculations and generation of simulated data.  Documentation: http://gunagala.readthedocs.io/
 
 Gunagala is the word for sky in Kamilaroi/Gamilaraay, the language of the Traditional Owners of the land on which Siding Spring Observatory stands (ref: `www.dnathan.com <http://www.dnathan.com/language/gamilaraay/dictionary/GAM_G.HTM#gunagala>`_).
 
