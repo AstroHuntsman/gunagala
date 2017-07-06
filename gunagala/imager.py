@@ -1,7 +1,6 @@
 """
 Imaging instruments
 """
-
 import math
 import os
 
@@ -25,15 +24,28 @@ from .config import load_config
 from .utils import ensure_unit
 
 def create_imagers(config=None):
-    """ Parse performance data config and create a corresponding dictionary of Imager objects.
+    """
+    Parse config and create a corresponding dictionary of Imager objects.
 
-    Args:
-        config (optional): a dictionary containing the performance data configuration. If not specified `load_config()``
-            will be used to attempt to load a `performance.yaml` and/or `performance_local.yaml` file and use the
-            resulting config.
+    Parses a configuration and creates a dictionary of Imager objects
+    corresponding to the imaging instruments described by that config.
+    The config can be passed to the function as a dictionary object,
+    otherwise the config will be read from the
+    `gunagala/data/performance.yaml` and, if it exists, the
+    `performance_local.yaml` file.
 
-    Returns:
-        dict: dictionary of Imager objects.
+    Parameters
+    ----------
+    config : dict, optional
+        a dictionary containing the performance data configuration. If not
+        specified `load_config()` will be used to attempt to load a
+        `performance.yaml` and/or `performance_local.yaml` file and use
+        the resulting config.
+
+    Returns
+    -------
+    imagers: dict
+        dictionary of `Imager` objects.
     """
 
     if config is None:
@@ -116,24 +128,84 @@ def create_imagers(config=None):
 
 
 class Imager:
+    """
+    Class representing an astronomical imaging instrument.
 
+    Class representing a complete astronomical imaging system, including
+    optics, optical filters and camera. Also includes point spread
+    function and sky background models. Optionally it can be used to
+    represent an array of identical, co-aligned imager using the
+    `num_imagers` parameter to specify the number of copies.
+
+    Parameters
+    ----------
+
+    optic : gunagala.optic.Optic
+        Optical system model
+    camera : gunagala.camera.Camera
+        Camera (image sensor) model
+    filters : dict of gunagala.filter.Filter
+        Dictionary of optical filter models
+    psf : gunagala.psf.PSF
+        Point spread function model
+    sky : gunagala.sky.Sky
+        Sky background model
+    num_imagers : int, optional
+        the number of identical, co-aligned imagers represented by this
+        `Imager`. The default is 1.
+    num_per_computer : int, optional
+        number of cameras connected to each computer. Used in situations
+        where multiple cameras must be readout sequentially so the
+        effective readout time is equal to the readout time of a single
+        camera multiplied by the `num_per_computer`. The default is 1.
+
+    Attributes
+    ----------
+    optic : gunagala.optic.Optic
+        Same as parameters
+    camera : gunagala.camera.Camera
+        Same as parameters
+    filters : dict
+        Same as parameters
+    psf : gunagala.psf.PSF
+        Same as parameters
+    sky : gunagala.sky.Sky
+        Same as parameters
+    num_imagers : int
+        Same as parameters
+    num_per_computer : int
+        Same as parameters
+    filter_names : list of str
+        List of filter names from `filters`
+    pixel_scale : astropy.units.Quantity
+        Pixel scale in arcseconds/pixel units
+    pixel_area : astropy.units.Quantity
+        Pixel area in arseconds^2/pixel units
+    field_of_view : astropy.units.Quantity
+        Field of view (horizontal, vertical) in degrees
+    wcs : astropy.wcs.WCS
+        Template world coordinate system (WCS) for sky coordinate/pixel
+        coordinate mapping
+    wavelengths : astropy.units.Quantity
+        List of wavelengths used for wavelength dependent
+        attributes/calculations
+    efficiencies : dict of astropy.units.Quantity
+        End to end efficiency as a function of wavelegth for each filter
+        bandpass
+    efficiency : dict of astropy.units.Quantity
+        Mean end to end efficiencies for each filter bandpass
+    mean_wave : dict of astropy.units.Quantity
+        Mean wavelength for each filter bandpass
+    pivot_wave : dict of astropy.units.Quantity
+        Pivot wavelength for each filter bandpass
+    bandwidth : dict of astropy.units.Quantity
+        Bandwidths for each filter bandpass (STScI definition)
+    sky_rate : dict of astropy.units.Quantity
+        Detected electrons/s/pixel due to the sky background for each
+        filter bandpass
+    """
     def __init__(self, optic, camera, filters, psf, sky, num_imagers=1, num_per_computer=1):
-        """
-        Class representing an astronomical imaging system, including optics, optical filters and camera. Also includes
-        a point spread function (PSF) model. It can also be used to represent an array of identical co-aligned imagers
-        using the optional `num_imagers` parameter to specify the number of copies whose data will be combined.
 
-        Args:
-            optic (optic.Optic): An instance of the Optic class
-            camera (camera.Camera): An instance of the Camera class
-            filters (dict): A dictionary containing instances of the filter.Filter class
-            psf (psf.PSF): An instance of the PSF class
-            sky (sky.Sky): An instance of the Sky class
-            num_imagers (int, optional): to represent an array of identical, co-aligned imagers specify the number here
-            num_per_computer (int, optional): number of cameras connected to each computer. Used in situations where
-                multiple cameras must be readout sequentially so the effective readout time is equal to the readout
-                time of a single camera multiplied by the number of cameras. This is the case for SBIG cameras.
-        """
 
         if not isinstance(optic, Optic):
             raise ValueError("'{}' is not an instance of the Optic class!".format(optic))
@@ -212,27 +284,48 @@ class Imager:
 
     def extended_source_signal_noise(self, surface_brightness, filter_name, total_exp_time, sub_exp_time,
                                      calc_type='per pixel', saturation_check=True, binning=1):
-        """Calculates the signal and noise for an extended source with given surface brightness. Alternatively can
-        calculate the signal and noise for measurements of the sky background itself by setting the source
-        surface brightness to None.
+        """
+        Calculates the signal and noise for an extended source with given
+        surface brightness.
 
-        Args:
-            surface_brightness (Quantity or callable): surface brightness per arcsecond^2 of the source in ABmag
-                units, or an equivalent count rate in photo-electrons per second per pixel, or a callable object that
-                return surface brightness in spectral flux density units as a function of wavelength. Set to None or
-                False to calculate the signal and noise for the sky background.
-            filter_name: name of the optical filter in use
-            total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
-                multiple of sub_exp_time
-            sub_exp_time (Quantity): length of individual sub-exposures
-            calc_type (string, optional, default 'per pixel'): calculation type, 'per pixel' to calculate signal & noise
-                per pixel, 'per arcsecond squared' to calculate signal & noise per arcsecond^2
-            saturation_check (bool, optional, default True): if true will set both signal and noise to zero if the
-                electrons per pixel in a single sub-exposure exceed the saturation level.
-            binning (int, optional): pixel binning factor. Cannot be used with calculation type 'per arcsecond squared'
+        Calculates the signal and noise for an extended source with given
+        surface brightness. Alternatively can calculate the signal and
+        noise for measurements of the sky background itself by setting the
+        source surface brightness to None.
 
-        Returns:
-            (Quantity, Quantity): signal and noise, units determined by calculation type.
+        Parameters
+        ----------
+        surface_brightness : astropy.units.Quantity or callable or None
+            Surface brightness per arcsecond^2 of the source in ABmag
+            units, or an equivalent count rate in photo-electrons per
+            second per pixel, or a callable object that return surface
+            brightness in spectral flux density units as a function of
+            wavelength. Set to None or False to calculate the signal and
+            noise for the sky background.
+        filter_name : str
+            Name of the optical filter to use
+        total_exp_time : astropy.units.Quantity
+            Total length of all sub-exposures. If necessary will be
+            rounded up to an integer multiple of `sub_exp_time`
+        sub_exp_time : astropy.units.Quantity
+            Length of individual sub-exposures
+        calc_type : {'per pixel', 'per arcsecond squared'}
+            Calculation type, either signal & noise per pixel or signal &
+            noise per arcsecond^2. Default is 'per pixel'
+        saturation_check : bool, optional
+            If `True1 will set both signal and noise to zero where the
+            electrons per pixel in a single sub-exposure exceed the
+            saturation level. Default is `True`.
+        binning : int, optional
+            Pixel binning factor. Cannot be used with calculation type
+            'per arcsecond squared', will raise `ValueError` if you try.
+
+        Returns
+        -------
+        signal : astropy.units.Quantity
+            Total signal, units determined by calculation type.
+        noise: astropy.units.Quantity
+            Total noise, units determined by calculaton type.
         """
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
@@ -316,26 +409,46 @@ class Imager:
 
     def extended_source_snr(self, surface_brightness, filter_name, total_exp_time, sub_exp_time,
                             calc_type='per pixel', saturation_check=True, binning=1):
-        """ Calculates the signal to noise ratio for an extended source with given surface brightness. Alternatively
-        can calculate the signal to noise for measurements of the sky background itself by setting the source
-        surface brightness to None.
+        """
+        Calculates the signal to noise ratio for an extended source with
+        given surface brightness.
 
-        Args:
-            surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
-                an equivalent count rate in photo-electrons per second per pixel. Set to None or False to calculate
-                the signal to noise ratio for the sky background.
-            filter_name: name of the optical filter in use
-            total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
-                multiple of sub_exp_time
-            sub_exp_time (Quantity): length of individual sub-exposures
-            calc_type (string, optional, default 'per pixel'): calculation type, 'per pixel' to calculate signal & noise
-                per pixel, 'per arcsecond squared' to calculate signal & noise per arcsecond^2
-            saturation_check (bool, optional, default True): if true will set the signal to noise ratio to zero if the
-                electrons per pixel in a single sub-exposure exceed the saturation level.
-            binning (int, optional): pixel binning factor. Cannot be used with calculation type 'per arcsecond squared'
+        Calculates the signal to noise ratio for an extended source with
+        given surface brightness. Alternatively can calculate the signal
+        to noise for measurements of the sky background itself by setting
+        the source surface brightness to None.
 
-        Returns:
-            Quantity: signal to noise ratio, Quantity with dimensionless unscaled units
+        Parameters
+        ----------
+        surface_brightness : astropy.units.Quantity or callable or None
+            Surface brightness per arcsecond^2 of the source in ABmag
+            units, or an equivalent count rate in photo-electrons per
+            second per pixel, or a callable object that return surface
+            brightness in spectral flux density units as a function of
+            wavelength. Set to None or False to calculate the signal to
+            noise ratio for the sky background.
+        filter_name : str
+            Name of the optical filter to use
+        total_exp_time : astropy.units.Quantity
+            Total length of all sub-exposures. If necessary will be
+            rounded up to an integer multiple of `sub_exp_time`
+        sub_exp_time : astropy.units.Quantity
+            Length of individual sub-exposures
+        calc_type : {'per pixel', 'per arcsecond squared'}
+            Calculation type, either signal to noise ratio per pixel or
+            signal to noise ratio per arcsecond^2. Default is 'per pixel'
+        saturation_check : bool, optional
+            If `True1 will set the signal to noise ratio to zero where the
+            electrons per pixel in a single sub-exposure exceed the
+            saturation level. Default is `True`.
+        binning : int, optional
+            Pixel binning factor. Cannot be used with calculation type
+            'per arcsecond squared', will raise `ValueError` if you try.
+
+        Returns
+        -------
+            snr : astropy.units.Quantity
+                signal to noise ratio, dimensionless unscaled units
         """
         signal, noise = self.extended_source_signal_noise(surface_brightness, filter_name, total_exp_time,
                                                           sub_exp_time, calc_type, saturation_check, binning)
@@ -347,26 +460,47 @@ class Imager:
 
     def extended_source_etc(self, surface_brightness, filter_name, snr_target, sub_exp_time, calc_type='per pixel',
                             saturation_check=True, binning=1):
-        """Calculates the total exposure time required to reach a given signal to noise ratio for a given extended
-        source surface brightness. Alternatively can calculate the required time for measurements of the sky background
-        itself by setting the source surface brightness to None.
+        """
+        Calculates the total exposure time required to reach a given
+        signal to noise ratio for a given extended source surface
+        brightness.
 
-        Args:
-            surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
-                an equivalent count rate in photo-electrons per second per pixel. Set to None or False to calculate
-                the required time for the sky background.
-            filter_name: name of the optical filter in use
-            snr_target: The desired signal-to-noise ratio for the target
-            sub_exp_time (Quantity): length of individual sub-exposures
-            calc_type (string, optional, default 'per pixel'): calculation type, 'per pixel' to calculate signal & noise
-                per pixel, 'per arcsecond squared' to calculate signal & noise per arcsecond^2
-            saturation_check (bool, optional, default True): if true will set the total exposure time to zero if the
-                    electrons per pixel in a single sub-exposure exceed the saturation level.
-            binning (int, optional): pixel binning factor. Cannot be used with calculation type 'per arcsecond squared'
+        Calculates the total exposure time required to reach a given
+        signal to noise ratio for a given extended source surface
+        brightness. Alternatively can calculate the required time for
+        measurements of the sky background itself by setting the source
+        surface brightness to None.
 
-        Returns:
-            Quantity: total exposure time required to reach the signal to noise ratio target, rounded up to an integer
-                multiple of sub_exp_time
+        Parameters
+        ----------
+        surface_brightness : astropy.units.Quantity or None
+            Surface brightness per arcsecond^2 of the source in ABmag
+            units, or an equivalent count rate in photo-electrons per
+            second per pixel. Set to None or False to calculate the
+            required exposure time for measurements of the sky background.
+        filter_name : str
+            Name of the optical filter to use
+        snr_target : astropy.units.Quantity
+            The desired signal to noise ratio, dimensionless unscaled units
+        sub_exp_time : astropy.units.Quantity
+            length of individual sub-exposures
+        calc_type : {'per pixel', 'per arcsecond squared'}
+            Calculation type, either signal to noise ratio per pixel or
+            signal to noise ratio per arcsecond^2. Default is 'per pixel'
+        saturation_check : bool, optional
+            If `True` will set the signal to noise ratio to zero where the
+            electrons per pixel in a single sub-exposure exceed the
+            saturation level. Default is `True`.
+        binning : int, optional
+            Pixel binning factor. Cannot be used with calculation type
+            'per arcsecond squared', will raise `ValueError` if you try.
+
+        Returns
+        -------
+        total_exp_time : astropy.units.Quantity
+            Total exposure time required to reach a signal to noise ratio
+            of at least `snr_target`, rounded up to an integer multiple of
+            `sub_exp_time`.
         """
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
@@ -438,24 +572,41 @@ class Imager:
 
     def extended_source_limit(self, total_exp_time, filter_name, snr_target, sub_exp_time, calc_type='per pixel',
                               binning=1, enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
-        """Calculates the limiting extended source surface brightness for a given minimum signal to noise ratio and
-        total exposure time.
+        """
+        Calculates the limiting extended source surface brightness for a
+        given minimum signal to noise ratio and total exposure time.
 
-        Args:
-            total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
-                multiple of sub_exp_time
-            filter_name: name of the optical filter in use
-            snr_target: The desired signal-to-noise ratio for the target
-            sub_exp_time: Sub exposure time for each image, defaults to 300 seconds
-            calc_type (string, optional, default 'per pixel'): calculation type, 'per pixel' to calculate signal & noise
-                per pixel, 'per arcsecond squared' to calculate signal & noise per arcsecond^2
-            binning (int, optional): pixel binning factor. Cannot be used with calculation type 'per arcsecond squared'
-            enable_read_noise (bool, optional, default True): If False calculates limit as if read noise were zero
-            enable_sky_noise (bool, optional, default True): If False calculates limit as if sky background were zero
-            enable_dark_noise (bool, optional, default True): If False calculates limits as if dark current were zero
+        Parameters
+        ----------
+        total_exp_time : astropy.units.Quantity
+            Total length of all sub-exposures. If necessary will be
+            rounded up to an integer multiple of `sub_exp_time`
+        filter_name : str
+            Name of the optical filter to use
+        snr_target : astropy.units.Quantity
+            The desired signal to noise ratio, dimensionless unscaled units
+        sub_exp_time : astropy.units.Quantity
+            length of individual sub-exposures
+        calc_type : {'per pixel', 'per arcsecond squared'}
+            Calculation type, either signal to noise ratio per pixel or
+            signal to noise ratio per arcsecond^2. Default is 'per pixel'
+        binning : int, optional
+            Pixel binning factor. Cannot be used with calculation type
+            'per arcsecond squared', will raise `ValueError` if you try.
+        enable_read_noise : bool, optional
+            If `False` calculates limit as if read noise were zero, default
+            `True`
+        enable_sky_noise : bool, optional
+            If `False` calculates limit as if sky background were zero,
+            default `True`
+        enable_dark_noise : bool, optional
+            If False calculates limits as if dark current were zero,
+            default `True`
 
-        Returns:
-            Quantity: limiting source surface brightness per arcsecond squared, in AB mag units.
+        Returns
+        -------
+        surface_brightness : astropy.units.Quantity
+            Limiting source surface brightness per arcsecond squared, in AB mag units.
         """
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
@@ -503,14 +654,21 @@ class Imager:
         return self.rate_to_SB(rate, filter_name)
 
     def ABmag_to_rate(self, mag, filter_name):
-        """ Converts AB magnitudes to photo-electrons per second in the image sensor
+        """
+        Converts AB magnitudes to photo-electrons per second in the image
+        sensor
 
-        Args:
-            mag (Quantity): source brightness in AB magnitudes
-            filter_name: name of the optical filter in use
+        Parameters
+        ----------
+        mag : astropy.units.Quantity
+            Source brightness in AB magnitudes
+        filter_name : str
+            Name of the optical filter to use
 
-        Returns:
-            Quantity: corresponding photo-electrons per second
+        Returns
+        -------
+        rate : astropy.units.Quantity
+            Corresponding photo-electrons per second
         """
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
@@ -526,14 +684,21 @@ class Imager:
         return rate.to(u.electron / u.second)
 
     def rate_to_ABmag(self, rate, filter_name):
-        """ Converts photo-electrons per second in the image sensor to AB magnitudes
+        """
+        Converts photo-electrons per second in the image sensor to AB
+        magnitudes
 
-        Args:
-            rate (Quantity): photo-electrons per second
-            filter_name: name of the optical filter in use
+        Parameters
+        ----------
+        rate : astropy.units.Quantity
+            Photo-electrons per second
+        filter_name : str
+            Name of the optical filter to use
 
-        Returns:
-            Quantity: corresponding source brightness in AB magnitudes
+        Returns
+        -------
+        mag : astropy.units.Quantity
+            Corresponding source brightness in AB magnitudes
         """
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
