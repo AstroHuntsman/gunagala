@@ -21,8 +21,4 @@ Spring Observatory stands
 Reference/API
 =============
 
-.. automodule:: gunagala.imager
-    :members:
-
-.. autoclass:: gungala.imager.Imager
-    :members:
+.. automodapi:: gunagala

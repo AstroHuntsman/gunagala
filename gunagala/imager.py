@@ -732,23 +732,38 @@ class Imager:
         At the time of writing `astropy.units` did not support the
         commonly used (but dimensionally nonsensical) expression of
         surface brightness in 'magnitudes per arcsecond squared'.
-        Consequently the `mag` surface brightenss parameter should
-        have a units of `astropy.unit.ABmag`, the `per arcsecond
-        squared` is implied.
+        Consequently the `mag` surface brightness parameter should
+        have a units of `astropy.unit.ABmag`, the 'per arcsecond
+        squared' is implied.
         """
         # Use ABmag_to_rate() to convert to electrons per second, then multiply by pixel area
         SB_rate = self.ABmag_to_rate(mag, filter_name) * self.pixel_area / (u.arcsecond**2)
         return SB_rate.to(u.electron / (u.second * u.pixel))
 
     def rate_to_SB(self, SB_rate, filter_name):
-        """ Converts photo-electrons per pixel per second to surface brightness AB magnitudes (per arcsecond squared)
+        """
+        Converts photo-electrons per pixel per second to surface brightness
+        AB magnitudes (per arcsecond squared)
 
-        Args:
-            SB_rate (Quantity): photo-electrons per pixel per second
-            filter_name: name of the optics filter in use
+        Parameters
+        ----------
+        SB_rate : astropy.units.Quantity
+            Photo-electrons per pixel per second
+        filter_name : str
+            Name of the optical filter to use
 
-        Returns:
-            Quantity: corresponding source surface brightness in AB magnitudes
+        Returns
+        -------
+        mag : astropy.units.Quantity
+            Corresponding source surface brightness in AB magnitudes
+
+        Notes
+        -----
+        At the time of writing `astropy.units` did not support the
+        commonly used (but dimensionally nonsensical) expression of
+        surface brightness in 'magnitudes per arcsecond squared'.
+        Consequently the `mag` surface brightness return value has units
+        of `astropy.unit.ABmag`, the 'per arcsecond squared' is implied.
         """
         SB_rate = ensure_unit(SB_rate, u.electron / (u.second * u.pixel))
         # Divide by pixel area to convert to electrons per second per arcsecond^2
@@ -757,14 +772,27 @@ class Imager:
         return self.rate_to_ABmag(rate, filter_name)
 
     def ABmag_to_flux(self, mag, filter_name):
-        """ Converts brightness of the target to total flux, integrated over the filter band.
+        """
+        Converts brightness of the target to total flux, integrated over
+        the filter band.
 
-        Args:
-            mag: brightness of the target, measured in ABmag
-            filter_name: name of the optical filter in use
+        Parameters
+        ----------
+        mag : astropy.units.Quantity
+            Brightness of the target in AB magnitudes
+        filter_name : str
+            Name of the optical filter to use
 
-        Returns:
-            Quantity: corresponding total flux in units of Watts per square metre
+        Returns
+        -------
+        flux : astropy.units.Quantity
+            Corresponding total flux in Watts per square metre
+
+        Notes
+        -----
+        The conversion between band averaged magnitudes and total flux
+        depends somewhat on the spectrum of the source. For this
+        calculation we assume $F_\nu$ is constant.
         """
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
@@ -777,7 +805,43 @@ class Imager:
         # Then use pre-calculated integral to convert to total flux in the band (assumed constant F_nu)
         flux = f_nu * c.c * self._iminus2[filter_name] * u.photon / u.electron
 
-        return flux.to(u.W / (u.m**2))
+        return flux.to(u.W / u.m**2)
+
+    def flux_to_ABmag(self, flux, filter_name):
+        """
+        Converts total flux of the target, integrated over the filter
+        band, to magnitudes.
+
+        Parameters
+        ----------
+        flux : astropy.units.Quantity
+            Total flux in Watts per square metre
+        filter_name : str
+            Name of the optical filter to use
+
+        Returns
+        -------
+        mag : astropy.units.Quantity
+            Corresponding brightness of the target in AB magnitudes
+
+        Notes
+        -----
+        The conversion between band averaged magnitudes and total flux
+        depends somewhat on the spectrum of the source. For this
+        calculation we assume $F_\nu$ is constant.
+        """
+        if filter_name not in self.filter_names:
+            raise ValueError("This Imager has no filter '{}'!".format(filter_name))
+
+        flux = ensure_unit(flux, u.W / u.m**2)
+
+        # First convert from total flux to spectral flux densitity per
+        # unit wavelength, using the pre-caluclated integral.
+        f_nu = flux  * u.electron / (self._iminus2[filter_name] * c.c * u.photon)
+
+        # Then convert spectral flux density to magnitudes
+        return f_nu.to(u.ABmag,
+                       equivalencies=u.equivalencies.spectral_density(self.pivot_wave[filter_name]))
 
     def total_exposure_time(self, total_elapsed_time, sub_exp_time):
         """ Calculates total exposure time given a total elapsed time and sub-exposure time

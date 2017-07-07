@@ -1,6 +1,7 @@
 # Tests for the signal-to-noise module
 import pytest
 import astropy.units as u
+import astropy.constants as c
 
 from ..optic import Optic
 from ..optical_filter import Filter
@@ -84,6 +85,29 @@ def test_imager_init(imager):
                                                             equivalencies=u.dimensionless_angles())**2 * u.pixel
     assert (imager.field_of_view == (3326, 2504) * u.pixel * imager.pixel_scale).all()
 
+
+def test_imager_conversions(imager, filter_name):
+    mag = 25 * u.ABmag
+
+    # Round trip from AB magnitudes to photo-electrons per second and back
+    rate = imager.ABmag_to_rate(mag, filter_name)
+    assert imager.rate_to_ABmag(rate, filter_name) == mag
+
+    # Round trip from AB magnitudes to total flux and bacl
+    flux = imager.ABmag_to_flux(mag, filter_name)
+    assert imager.flux_to_ABmag(flux, filter_name) == mag
+
+    # AB magnitudes to flux, manual conversion to rate, then rate back to mag
+    flux = imager.ABmag_to_flux(mag, filter_name)
+    photon_energy = c.h * c.c / (imager.pivot_wave[filter_name] * u.photon)
+    rate = flux * imager.optic.aperture_area * imager.efficiency[filter_name] / photon_energy
+    assert imager.rate_to_ABmag(rate, filter_name) == mag
+
+    # AB magnitudes to rate, manaul conversion to flux, then back to mag
+    rate = imager.ABmag_to_rate(mag, filter_name)
+    photon_energy = c.h * c.c / (imager.pivot_wave[filter_name] * u.photon)
+    flux = rate * photon_energy / (imager.optic.aperture_area * imager.efficiency[filter_name])
+    assert imager.flux_to_ABmag(flux, filter_name) == mag
 
 def test_imager_extended_snr(imager, filter_name):
     sb = 25 * u.ABmag
