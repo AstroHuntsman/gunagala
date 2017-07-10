@@ -313,7 +313,7 @@ class Imager:
             Calculation type, either signal & noise per pixel or signal &
             noise per arcsecond^2. Default is 'per pixel'
         saturation_check : bool, optional
-            If `True1 will set both signal and noise to zero where the
+            If `True` will set both signal and noise to zero where the
             electrons per pixel in a single sub-exposure exceed the
             saturation level. Default is `True`.
         binning : int, optional
@@ -844,14 +844,24 @@ class Imager:
                        equivalencies=u.equivalencies.spectral_density(self.pivot_wave[filter_name]))
 
     def total_exposure_time(self, total_elapsed_time, sub_exp_time):
-        """ Calculates total exposure time given a total elapsed time and sub-exposure time
+        """
+        Calculates total exposure time given a total elapsed time and
+        sub-exposure time.
 
-        Args:
-            total_elapsed_time (Quantity): Total elapsed time, including readout overheads
-            sub_exp_time (Quantity): Exposure time of individual sub-exposures
+        The calculation includes readout time overheads (but no others, at
+        present) and rounds down to an integer number of sub-exposures.
 
-        Returns:
-            Quantity: maximum total exposure time possible in an elapsed time of no more than total_elapsed_time
+        Parameters
+        ----------
+        total_elapsed_time : astropy.units.Quantity
+            Total elapsed time
+        sub_exp_time : astropy.units.Quantity
+            Exposure time of individual sub-exposures
+
+        Returns
+        -------
+        total_exposure_time : astropy.units.Quantity
+            Maximum total exposure time possible in an elapsed time of no more than `total_elapsed_time`
         """
         total_elapsed_time = ensure_unit(total_elapsed_time, u.second)
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
@@ -861,13 +871,22 @@ class Imager:
         return total_exposure_time
 
     def total_elapsed_time(self, exp_list):
-        """ Calculates the total elapsed time required for a given a list of sub exposure times
+        """
+        Calculates the total elapsed time required for a given a list of
+        sub-exposure times.
 
-        Args:
-            exp_list (Quantity): list of exposure times
+        The calculation add readout time overheads (but no others, at
+        present) and sums the elapsed time from all sub-exposures.
 
-        Returns:
-            Quantity: total elapsed time, including readout overheads, required to execute the list of sub exposures
+        Parameters
+        ----------
+        exp_list : astropy.units.Quantity
+            List of sub-exposure times
+
+        Returns
+        -------
+        elapsed_time : astropy.units.Quantity
+            Total elapsed time required to execute the list of sub exposures
         """
         exp_list = ensure_unit(exp_list, u.second)
 
@@ -875,20 +894,51 @@ class Imager:
         return elapsed_time
 
     def point_source_signal_noise(self, brightness, filter_name, total_exp_time, sub_exp_time, saturation_check=True):
-        """Calculates the signal and noise for a point source of a given brightness, assuming PSF fitting photometry
+        """
+        Calculates the signal and noise for a point source of a given
+        brightness, assuming PSF fitting photometry
 
-        Args:
-            brightness (Quantity): brightness of the source, in ABmag units, or an equivalent count rate in
-                photo-electrons per second.
-            filter_name: name of the optical filter in use
-            total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
-                multiple of sub_exp_time
-            sub_exp_time (Quantity): length of individual sub-exposures
-            saturation_check (bool, optional, default True): if true will set both signal and noise to zero if the
-                electrons per pixel in a single sub-exposure exceed the saturation level.
+        The returned signal and noise values are the weighted sum over the
+        pixels in the source image, where the weights are the normalised
+        pixel values of the PSF model being fit to the data.
 
-        Returns:
-            (Quantity, Quantity): effective signal and noise, in electrons
+        Parameters
+        ----------
+        brightness : astropy.units.Quantity
+            Brightness of the source in ABmag units, or an equivalent
+            count rate in photo-electrons per second.
+        filter_name : str
+            Name of the optical filter to use
+        total_exp_time : astropy.units.Quantity
+            Total length of all sub-exposures. If necessary will be
+            rounded up to an integer multiple of `sub_exp_time`
+        sub_exp_time : astropy.units.Quantity
+            Length of individual sub-exposures
+        calc_type : {'per pixel', 'per arcsecond squared'}
+            Calculation type, either signal & noise per pixel or signal &
+            noise per arcsecond^2. Default is 'per pixel'
+        saturation_check : bool, optional
+            If `True` will set both signal and noise to zero where the
+            electrons per pixel in a single sub-exposure exceed the
+            saturation level. Default is `True`.
+
+        Returns
+        -------
+        signal : astropy.units.Quantity
+            Effective total signal in units of electrons
+        noise: astropy.units.Quantity
+            Effective total noise in units of electrons
+
+        Notes
+        ----------
+        The PSF fitting signal to noise calculations follow the example
+        of http://www.stsci.edu/itt/review/ihb_cy14.WFPC2/ch6_exposuretime6.html
+
+        The values will depend on the position of the centre of the PSF
+        relative to the pixel grid, this calculation assumes the worst
+        case of PSF centres on a pixel corner. Conversely it
+        optimistically assumes that the PSF model exactly matches the PSF
+        of the data.
         """
         if not isinstance(brightness, u.Quantity):
             brightness = brightness * u.ABmag
@@ -923,21 +973,38 @@ class Imager:
         return signal, noise
 
     def point_source_snr(self, brightness, filter_name, total_exp_time, sub_exp_time, saturation_check=True):
-        """Calculates the signal to noise ratio for a point source of a given brightness, assuming PSF fitting
-        photometry
+        """
+        Calculates the signal to noise ratio for a point source of a given
+        brightness, assuming PSF fitting photometry
 
-        Args:
-            brightness (Quantity): brightness of the source, in ABmag units, or an equivalent count rate in
-                photo-electrons per second.
-            filter_name: name of the optical filter in use
-            total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
-                multiple of sub_exp_time
-            sub_exp_time (Quantity): length of individual sub-exposures
-            saturation_check (bool, optional, default True): if true will set the signal to noise ratio to zero if the
-                electrons per pixel in a single sub-exposure exceed the saturation level.
+        The returned signal to noise ratio refers to the weighted sum over
+        the pixels in the source image, where the weights are the
+        normalised pixel values of the PSF model being fit to the data.
 
-        Returns:
-            Quantity: signal to noise ratio, Quantity with dimensionless unscaled units
+        Parameters
+        ----------
+        brightness : astropy.units.Quantity
+            Brightness of the source in ABmag units, or an equivalent
+            count rate in photo-electrons per second.
+        filter_name : str
+            Name of the optical filter to use
+        total_exp_time : astropy.units.Quantity
+            Total length of all sub-exposures. If necessary will be
+            rounded up to an integer multiple of `sub_exp_time`
+        sub_exp_time : astropy.units.Quantity
+            Length of individual sub-exposures
+        calc_type : {'per pixel', 'per arcsecond squared'}
+            Calculation type, either signal & noise per pixel or signal &
+            noise per arcsecond^2. Default is 'per pixel'
+        saturation_check : bool, optional
+            If `True` will set both signal and noise to zero where the
+            electrons per pixel in a single sub-exposure exceed the
+            saturation level. Default is `True`.
+
+        Returns
+        -------
+        snr : astropy.units.Quantity
+            signal to noise ratio dimensionless unscaled units
         """
         signal, noise = self.point_source_signal_noise(brightness, filter_name,
                                                        total_exp_time, sub_exp_time, saturation_check)

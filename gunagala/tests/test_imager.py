@@ -1,5 +1,6 @@
 # Tests for the signal-to-noise module
 import pytest
+import numpy as np
 import astropy.units as u
 import astropy.constants as c
 
@@ -108,6 +109,16 @@ def test_imager_conversions(imager, filter_name):
     photon_energy = c.h * c.c / (imager.pivot_wave[filter_name] * u.photon)
     flux = rate * photon_energy / (imager.optic.aperture_area * imager.efficiency[filter_name])
     assert imager.flux_to_ABmag(flux, filter_name) == mag
+
+def test_imager_time_calculations(imager, filter_name):
+    total_exposure_time = 28 * u.hour
+    sub_exp_time = 10 * u.minute
+    n_subs = (total_exposure_time / sub_exp_time).to(u.dimensionless_unscaled)
+    exp_list = np.ones(int(n_subs)) * sub_exp_time
+
+    # Round trip test, including rounding down.
+    total_elapsed_time = imager.total_elapsed_time(exp_list)
+    assert imager.total_exposure_time(total_elapsed_time + sub_exp_time / 2, sub_exp_time)
 
 def test_imager_extended_snr(imager, filter_name):
     sb = 25 * u.ABmag
