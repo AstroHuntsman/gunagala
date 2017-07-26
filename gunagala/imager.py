@@ -438,7 +438,7 @@ class Imager:
             Calculation type, either signal to noise ratio per pixel or
             signal to noise ratio per arcsecond^2. Default is 'per pixel'
         saturation_check : bool, optional
-            If `True1 will set the signal to noise ratio to zero where the
+            If `True` will set the signal to noise ratio to zero where the
             electrons per pixel in a single sub-exposure exceed the
             saturation level. Default is `True`.
         binning : int, optional
@@ -488,7 +488,7 @@ class Imager:
             Calculation type, either signal to noise ratio per pixel or
             signal to noise ratio per arcsecond^2. Default is 'per pixel'
         saturation_check : bool, optional
-            If `True` will set the signal to noise ratio to zero where the
+            If `True` will set the exposure time to zero where the
             electrons per pixel in a single sub-exposure exceed the
             saturation level. Default is `True`.
         binning : int, optional
@@ -1018,18 +1018,28 @@ class Imager:
         """ Calculates the total exposure time required to reach a given signal to noise ratio for a given point
         source brightness.
 
-        Args:
-            brightness (Quantity): brightness of the source, in ABmag units, or an equivalent count rate in
-                photo-electrons per second.
-            filter_name: name of the optical filter in use
-            snr_target: the desired signal-to-noise ratio for the target
-            sub_exp_time (Quantity): length of individual sub-exposures
-            saturation_check (bool, optional, default True): if true will set total exposure time to zero if the
-                electrons per pixel in a single sub-exposure exceed the saturation level.
+        Parameters
+        ----------
+        brightness : astropy.units.Quantity
+            Brightness of the source in ABmag units, or an equivalent
+            count rate in photo-electrons per second.
+        filter_name : str
+            Name of the optical filter to use
+        snr_target : astropy.units.Quantity
+            The desired signal to noise ratio, dimensionless unscaled units
+        sub_exp_time : astropy.units.Quantity
+            length of individual sub-exposures
+        saturation_check : bool, optional
+            If `True` will set the exposure time to zero where the
+            electrons per pixel in a single sub-exposure exceed the
+            saturation level. Default is `True`.
 
-        Returns:
-            Quantity: total exposure time required to reach the signal to noise ratio target, rounded up to an integer
-                multiple of sub_exp_time
+        Returns
+        -------
+        total_exp_time : astropy.units.Quantity
+            Total exposure time required to reach a signal to noise ratio
+            of at least `snr_target`, rounded up to an integer multiple of
+            `sub_exp_time`.
         """
         if not isinstance(brightness, u.Quantity):
             brightness = brightness * u.ABmag
@@ -1059,18 +1069,34 @@ class Imager:
         """Calculates the limiting point source surface brightness for a given minimum signal to noise ratio and
         total exposure time.
 
-        Args:
-            total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
-                multiple of sub_exp_time
-            filter_name: name of the optical filter in use
-            snr_target: The desired signal-to-noise ratio for the target
-            sub_exp_time: Sub exposure time for each image
-            enable_read_noise (bool, optional, default True): If False calculates limit as if read noise were zero
-            enable_sky_noise (bool, optional, default True): If False calculates limit as if sky background were zero
-            enable_dark_noise (bool, optional, default True): If False calculates limits as if dark current were zero
+        Parameters
+        ----------
+        total_exp_time : astropy.units.Quantity
+            Total length of all sub-exposures. If necessary will be
+            rounded up to an integer multiple of `sub_exp_time`
+        filter_name : str
+            Name of the optical filter to use
+        snr_target : astropy.units.Quantity
+            The desired signal to noise ratio, dimensionless unscaled units
+        sub_exp_time : astropy.units.Quantity
+            length of individual sub-exposures
+        calc_type : {'per pixel', 'per arcsecond squared'}
+            Calculation type, either signal to noise ratio per pixel or
+            signal to noise ratio per arcsecond^2. Default is 'per pixel'
+        enable_read_noise : bool, optional
+            If `False` calculates limit as if read noise were zero, default
+            `True`
+        enable_sky_noise : bool, optional
+            If `False` calculates limit as if sky background were zero,
+            default `True`
+        enable_dark_noise : bool, optional
+            If False calculates limits as if dark current were zero,
+            default `True`
 
-        Returns:
-            Quantity: limiting point source brightness, in AB mag units.
+        Returns
+        -------
+        brightness : astropy.units.Quantity
+            Limiting point source brightness, in AB mag units.
         """
         # For PSF fitting photometry the signal to noise calculation is equivalent to dividing the flux equally
         # amongst n_pix pixels, where n_pix is the sum of the squares of the pixel values of the PSF.  The psf
@@ -1088,18 +1114,27 @@ class Imager:
         return (equivalent_SB.value - 2.5 * np.log10(self.psf.n_pix * self.pixel_area / u.arcsecond**2).value) * u.ABmag
 
     def extended_source_saturation_mag(self, sub_exp_time, filter_name, n_sigma=3.0):
-        """ Calculates the surface brightness of the brightest extended source that would definitely not saturate the
-            image sensor in a given (sub) exposure time.
+        """
+        Calculates the surface brightness of the brightest extended source
+        that would definitely not saturate the image sensor in a given (sub)
+        exposure time.
 
-        Args:
-            sub_exp_time (Quantity): length of the (sub) exposure
-            filter_name: name of the optical filter in use
-            n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
-                in multiples of the noise
+        Parameters
+        ----------
+        sub_exp_time : astropy.units.Quantity
+            Length of the (sub) exposure.
+        filter_name : str
+            Name of the optical filter to use.
+        n_sigma : float, optional
+            Safety margin to leave between the maximum expected electrons
+            per pixel and the nominal saturation level, in multiples of
+            the noise, default 3.0
 
-        Returns:
-            Quantity: surface brightness per arcsecond^2 of the brightest extended source that will definitely not
-                saturate, in AB magnitudes.
+        Returns
+        -------
+        surface_brightness : astropy.units.Quantity
+            Surface brightness per arcsecond^2 of the brightest extended
+            source that will definitely not saturate, in AB magnitudes.
         """
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
@@ -1111,17 +1146,26 @@ class Imager:
         return self.rate_to_SB(max_source_rate, filter_name)
 
     def point_source_saturation_mag(self, sub_exp_time, filter_name, n_sigma=3.0):
-        """ Calculates the magnitude of the brightest point source that would definitely not saturate the image
-            sensor in a given (sub) exposure time.
+        """
+        Calculates the magnitude of the brightest point source that would
+        definitely not saturate the image sensor in a given (sub) exposure
+        time.
 
-        Args:
-            sub_exp_time (Quantity): length of the (sub) exposure
-            filter_name: name of the optical filter in use
-            n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
-                in multiples of the noise
+        Parameters
+        ----------
+        sub_exp_time : astropy.units.Quantity
+            Length of the (sub) exposure.
+        filter_name : str
+            Name of the optical filter to use.
+        n_sigma : float, optional
+            Safety margin to leave between the maximum expected electrons
+            per pixel and the nominalsaturation level, in multiples of
+            the noise, default 3.0
 
-        Returns:
-            Quantity: AB magnitude of the brightest point source that will definitely not saturate.
+        Returns
+        -------=
+        brighness : astropy.units.Quantity
+            AB magnitude of the brightest point source that will definitely not saturate.
         """
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
@@ -1133,18 +1177,28 @@ class Imager:
         return self.rate_to_ABmag(max_source_rate / self.psf.peak, filter_name)
 
     def extended_source_saturation_exp(self, surface_brightness, filter_name, n_sigma=3.0):
-        """ Calculates the maximum (sub) exposure time that will definitely avoid saturation for an extended source
-            of given surface brightness
+        """
+        Calculates the maximum (sub) exposure time that will definitely
+        avoid saturation for an extended source of given surface
+        brightness.
 
-        Args:
-            surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
-                an equivalent count rate in photo-electrons per second per pixel.
-            filter_name: name of the optical filter in use
-            n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
-                in multiples of the noise
+        Parameters
+        ----------
+        surface_brightness : astropy.units.Quantity
+            Surface brightness per arcsecond^2 of the source in ABmag
+            units, or an equivalent count rate in photo-electrons per
+            second per pixel
+        filter_name : str
+            Name of the optical filter to use
+        n_sigma : float, optional
+            Safety margin to leave between the maximum expected electrons
+            per pixel and the nominalsaturation level, in multiples of
+            the noise, default 3.0
 
-        Returns:
-            Quantity: maximum length of (sub) exposure that will definitely avoid saturation
+        Returns
+        -------
+        sub_exp_time : astropy.units.Quantity
+            Maximum length of (sub) exposure that will definitely avoid saturation
         """
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
@@ -1166,18 +1220,26 @@ class Imager:
         return max_electrons_per_pixel / total_rate
 
     def point_source_saturation_exp(self, brightness, filter_name, n_sigma=3.0):
-        """ Calculates the maximum (sub) exposure time that will definitely avoid saturation for point source of given
-            brightness
+        """
+        Calculates the maximum (sub) exposure time that will definitely
+        avoid saturation for point source of given brightness
 
-        Args:
-            brightness (Quantity): brightness of the point source, in ABmag units, or an equivalent count rate in
-                photo-electrons per second.
-            filter_name: name of the optical filter in use
-            n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
-                in multiples of the noise
+        Parameters
+        ----------
+        brightness : astropy.units.Quantity
+            Brightness of the source in ABmag units, or an equivalent
+            count rate in photo-electrons per second.
+        filter_name : str
+            Name of the optical filter to use
+        n_sigma : float, optional
+            Safety margin to leave between the maximum expected electrons
+            per pixel and the nominalsaturation level, in multiples of
+            the noise, default 3.0
 
-        Returns:
-            Quantity: maximum length of (sub) exposure that will definitely avoid saturation
+        Returns
+        -------
+        sub_exp_time : astropy.units.Quantity
+            Maximum length of (sub) exposure that will definitely avoid saturation
         """
         if not isinstance(brightness, u.Quantity):
             brightness = brightness * u.ABmag
@@ -1202,26 +1264,36 @@ class Imager:
                           exp_time_ratio=2.0,
                           snr_target=5.0):
         """
-        Calculates a sequence of sub exposures to use to span a given range of either point source brightness or
-        exposure time. If required the sequence will begin with an 'HDR block' of progressly increasing exposure time,
-        followed by 1 or more exposures of equal length with the number of long exposures either specified directly or
-        calculated from the faintest point source that the sequence is intended to detect.
+        Calculates a sequence of sub exposures to use to span a given
+        range of either point source brightness or exposure time.
 
-        Args:
-            filter_name: name of the optical filter in use
-            bright_limit (Quantity, optional): brightness in ABmag of the brightest point sources that we want to avoid
-                saturating on, will be used to calculate a suitable shortest exposure time. Optional, but one and only
-                one of bright_limit and shortest_exp_time must be specified.
-            shortest_exp_time (Quantity, optional): shortest sub exposure time to include in the sequence. Optional, but
-                one and only one of bright_limit and shortest_exp_time must be specified.
-            longest_exp_time (Quantity): longest sub exposure time to include in the sequence.
-            faint_limit (Quantity, optional): brightness in ABmag if the faintest point sources that we want to be able
-                to detect in the combined data from the sequence. Optional, but one and only one of faint_limit and
-                num_long_exp must be specified.
-            num_long_exp (int, optional): number of repeats of the longest sub exposure to include in the sequence.
-                Optional, but one and only one of faint_limit and num_long_exp must be specified.
-            exp_time_ratio (float, optional, default 2.0): ratio between successive sub exposure times in the HDR block.
-            snr_target(float, optional, default 5.0): signal to noise ratio threshold for detection at faint_limit
+        If required the sequence will begin with an 'HDR block' of
+        progressly increasing exposure time, followed by 1 or more
+        exposures of equal length with the number of long exposures either
+        specified directly or calculated from the faintest point source
+        that the sequence is intended to detect.
+
+        Parameters
+        ----------
+        filter_name : str
+            Name of the optical filter to use
+        bright_limit : astropy.units.Quantity, optional
+            Brightness in ABmag of the brightest point sources that we want
+            to avoid saturating on, will be used to calculate a suitable
+            shortest exposure time. Optional, but one and only one of `bright_limit`
+            and `shortest_exp_time` must be specified.
+        shortest_exp_time : astropy.units.Quantity, optional
+            Shortest sub exposure time to include in the sequence.
+            Optional, but one and only one of `bright_limit` and
+            `shortest_exp_time` must be specified.
+        longest_exp_time (Quantity): longest sub exposure time to include in the sequence.
+        faint_limit (Quantity, optional): brightness in ABmag if the faintest point sources that we want to be able
+            to detect in the combined data from the sequence. Optional, but one and only one of faint_limit and
+            num_long_exp must be specified.
+        num_long_exp (int, optional): number of repeats of the longest sub exposure to include in the sequence.
+            Optional, but one and only one of faint_limit and num_long_exp must be specified.
+        exp_time_ratio (float, optional, default 2.0): ratio between successive sub exposure times in the HDR block.
+        snr_target(float, optional, default 5.0): signal to noise ratio threshold for detection at faint_limit
 
         Returns:
             Quantity: sequence of sub exposure times
