@@ -1276,27 +1276,39 @@ class Imager:
         Parameters
         ----------
         filter_name : str
-            Name of the optical filter to use
+            Name of the optical filter to use.
         bright_limit : astropy.units.Quantity, optional
-            Brightness in ABmag of the brightest point sources that we want
-            to avoid saturating on, will be used to calculate a suitable
-            shortest exposure time. Optional, but one and only one of `bright_limit`
-            and `shortest_exp_time` must be specified.
+            Brightness in ABmag of the brightest point sources that we
+            want to avoid saturating on, will be used to calculate a
+            suitable shortest exposure time. Optional, but one and only
+            one of `bright_limit` and `shortest_exp_time` must be
+            specified.
         shortest_exp_time : astropy.units.Quantity, optional
             Shortest sub exposure time to include in the sequence.
             Optional, but one and only one of `bright_limit` and
             `shortest_exp_time` must be specified.
-        longest_exp_time (Quantity): longest sub exposure time to include in the sequence.
-        faint_limit (Quantity, optional): brightness in ABmag if the faintest point sources that we want to be able
-            to detect in the combined data from the sequence. Optional, but one and only one of faint_limit and
-            num_long_exp must be specified.
-        num_long_exp (int, optional): number of repeats of the longest sub exposure to include in the sequence.
-            Optional, but one and only one of faint_limit and num_long_exp must be specified.
-        exp_time_ratio (float, optional, default 2.0): ratio between successive sub exposure times in the HDR block.
-        snr_target(float, optional, default 5.0): signal to noise ratio threshold for detection at faint_limit
+        longest_exp_time : astropy.units.Quantity
+            Longest sub exposure time to include in the sequence.
+        faint_limit : astropy.units.Quantity, optional
+            Brightness in ABmag of the faintest point sources that we want
+            to be able to detect in the combined data from the sequence.
+            Optional, but one and only one of `faint_limit` and
+            `num_long_exp` must be specified.
+        num_long_exp : int, optional
+            Number of repeats of the longest sub exposure to include in
+            the sequence. Optional, but one and only one of `faint_limit`
+            and `num_long_exp` must be specified.
+        exp_time_ratio : float, optional
+            Ratio between successive sub exposure times in the HDR block,
+            default 2.0
+        snr_target : float, optional
+            Signal to noise ratio threshold for detection at
+            `faint_limit`, default 5.0
 
-        Returns:
-            Quantity: sequence of sub exposure times
+        Returns
+        -------
+        exp_times : astropy.units.Quantity
+            Sequence of sub exposure times
         """
         # First verify all the inputs
         if filter_name not in self.filter_names:
@@ -1376,17 +1388,37 @@ class Imager:
 
     def snr_vs_ABmag(self, exp_times, filter_name, magnitude_interval=0.02 * u.ABmag, snr_target=1.0, plot=None):
         """
-        Calculates PSF fitting signal to noise ratio as a function of point source brightness for the combined data
-        resulting from a given sequence of sub exposures, and optionally generates a plot of the results. Automatically
-        choses limits for the magnitude range based on the saturation limit of the shortest exposure and the
-        sensitivity limit of the combined data.
+        Calculates PSF fitting signal to noise ratio as a function of
+        point source brightness for the combined data resulting from a
+        given sequence of sub exposures.
 
-        Args:
-            exp_times (Quantity): 1D array of the lengths of the sub exposures
-            filter_name: name of the optical filter in use
-            magnitude_interval (Quantity, optional, default 0.02 mag(AB)): step between consecutive brightness values
-            snr_target (optional, default 1.0): signal to noise threshold used to set faint limit of magnitude range
-            plot (optional): filename for the plot of SNR vs magnitude. If not given no plots will be generated.
+        Optionally generates a plot of the results. Automatically choses
+        limits for the magnitude range based on the saturation limit of
+        the shortest exposure and the sensitivity limit of the combined
+        data.
+
+        Parameters
+        ----------
+        exp_times : astropy.units.Quantity
+            Sequence of sub exposure times.
+        filter_name : str
+            Name of the optical filter to use.
+        magnitude_interval : astropy.units.Quantity, optional
+            Step between consecutive brightness values, default 0.02 mag
+        snr_target : float, optional
+            signal to noise threshold used to set faint limit of magnitude
+            range, default 1.0
+        plot : str, optional
+            Filename for the plot of SNR vs magnitude. If not given no
+            plots will be generated.
+
+        Returns
+        -------
+        magnitudes : astropy.units.Quantity
+            Sequence of point source brightnesses in AB magnitudes
+        snrs : astropy.units.Quantity
+            signal to noise ratios for point sources of the brightnesses
+            in `magnitudes`
         """
         magnitude_interval = ensure_unit(magnitude_interval, u.ABmag)
 
