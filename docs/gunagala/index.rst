@@ -24,21 +24,47 @@ Spring Observatory stands
 Installation
 ============
 
-Requirements
-------------
-
 Installing with pip
 -------------------
 
-GitHub
-------
+To install using the Python package manager ``pip`` use the following command::
+
+  pip install git+https://github.com/AstroHuntsman/gunagala.git
+
+Alternatively to install in 'editable mode' use::
+
+  pip install -r git+https://github.com/AstroHuntsman/gunagala.git
+
+Depending on the configuration of your system you may want to use pip's ``--user`` or ``--root`` options to change
+the install location. See the pip documentation for details.
+
+Pip will automatically install the Python packages required by Gunagala (``numpy``, ``scipy``, ``astropy``, ``PyYAML``,
+``matplotlib`` and their dependencies) if they are not already installed.
+
+Installing from source
+----------------------
+
+The project source is in a GitHub repository at https://github.com/AstroHuntsman/gunagala. 
+
+Running the test suite
+----------------------
+
+After installing Gunagala it is recommended that you run the suite of units tests. This can be done at the command line
+using::
+
+  $ python setup.py test
+
+or from within a Python interpreter with::
+
+  >>> import gunagala
+  >>> gunagala.test()
 
 Examples
 ========
 
-The Gunagala package includes several examples in the form of `Jupyter<https://jupyter.org>`_ notebooks. These can be
+The Gunagala package includes several examples in the form of `Jupyter <https://jupyter.org>`_ notebooks. These can be
 found in the `gungala/examples` directory after installing Gunagala, or they can be viewed directly in the GitHub
-repository by going to https://github.com/AstroHuntsman/gunagala/tree/master/examples and clicking on the `.ipynb`
+repository by going to https://github.com/AstroHuntsman/gunagala/tree/master/examples and clicking on the ``.ipynb``
 files.
 
 Reference/API
