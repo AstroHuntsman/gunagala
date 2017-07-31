@@ -132,24 +132,25 @@ class Imager:
     Class representing an astronomical imaging instrument.
 
     Class representing a complete astronomical imaging system, including
-    optics, optical filters and camera. Also includes point spread
-    function and sky background models. Optionally it can be used to
-    represent an array of identical, co-aligned imager using the
-    `num_imagers` parameter to specify the number of copies.
+    optics, optical filters and camera.
+
+    Also includes point spread function and sky background models.
+    Optionally it can be used to represent an array of identical,
+    co-aligned imager using the `num_imagers` parameter to specify the
+    number of copies.
 
     Parameters
     ----------
-
     optic : gunagala.optic.Optic
-        Optical system model
+        Optical system model.
     camera : gunagala.camera.Camera
-        Camera (image sensor) model
+        Camera (image sensor) model.
     filters : dict of gunagala.filter.Filter
-        Dictionary of optical filter models
+        Dictionary of optical filter models.
     psf : gunagala.psf.PSF
-        Point spread function model
+        Point spread function model.
     sky : gunagala.sky.Sky
-        Sky background model
+        Sky background model.
     num_imagers : int, optional
         the number of identical, co-aligned imagers represented by this
         `Imager`. The default is 1.
@@ -162,50 +163,49 @@ class Imager:
     Attributes
     ----------
     optic : gunagala.optic.Optic
-        Same as parameters
+        Same as parameters.
     camera : gunagala.camera.Camera
-        Same as parameters
+        Same as parameters.
     filters : dict
-        Same as parameters
+        Same as parameters.
     psf : gunagala.psf.PSF
-        Same as parameters
+        Same as parameters.
     sky : gunagala.sky.Sky
-        Same as parameters
+        Same as parameters.
     num_imagers : int
-        Same as parameters
+        Same as parameters.
     num_per_computer : int
-        Same as parameters
+        Same as parameters.
     filter_names : list of str
-        List of filter names from `filters`
+        List of filter names from `filters`.
     pixel_scale : astropy.units.Quantity
-        Pixel scale in arcseconds/pixel units
+        Pixel scale in arcseconds/pixel units.
     pixel_area : astropy.units.Quantity
-        Pixel area in arseconds^2/pixel units
+        Pixel area in arseconds^2/pixel units.
     field_of_view : astropy.units.Quantity
-        Field of view (horizontal, vertical) in degrees
+        Field of view (horizontal, vertical) in degrees.
     wcs : astropy.wcs.WCS
         Template world coordinate system (WCS) for sky coordinate/pixel
-        coordinate mapping
+        coordinate mapping.
     wavelengths : astropy.units.Quantity
         List of wavelengths used for wavelength dependent
-        attributes/calculations
+        attributes/calculations.
     efficiencies : dict of astropy.units.Quantity
         End to end efficiency as a function of wavelegth for each filter
-        bandpass
+        bandpass.
     efficiency : dict of astropy.units.Quantity
-        Mean end to end efficiencies for each filter bandpass
+        Mean end to end efficiencies for each filter bandpass.
     mean_wave : dict of astropy.units.Quantity
-        Mean wavelength for each filter bandpass
+        Mean wavelength for each filter bandpass.
     pivot_wave : dict of astropy.units.Quantity
-        Pivot wavelength for each filter bandpass
+        Pivot wavelength for each filter bandpass.
     bandwidth : dict of astropy.units.Quantity
-        Bandwidths for each filter bandpass (STScI definition)
+        Bandwidths for each filter bandpass (STScI definition).
     sky_rate : dict of astropy.units.Quantity
         Detected electrons/s/pixel due to the sky background for each
-        filter bandpass
+        filter bandpass.
     """
     def __init__(self, optic, camera, filters, psf, sky, num_imagers=1, num_per_computer=1):
-
 
         if not isinstance(optic, Optic):
             raise ValueError("'{}' is not an instance of the Optic class!".format(optic))

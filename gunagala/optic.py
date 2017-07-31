@@ -16,19 +16,61 @@ data_dir = 'data/performance_data'
 
 
 class Optic:
+    """
+    Class representing the overall optical system.
 
+    The optical system includes all optics (e.g. telescope, including any
+    field flattener, focal reducer or reimaging optics) with the exception
+    of optical filters, which are handled by the `optical_filter.Filter`
+    class. At present only circular pupils (aperture) and are supported,
+    but central obstructions (also circular) can be modelled.
+
+    Parameters
+    ----------
+    aperture : astropy.units.Quantity
+        Diameter of the optical system entrance pupil (effective aperture
+        diameter).
+    focal_length : astropy.units.Quantity
+        Effective focal length of the optical system as a whole.
+    throughput_filename : str
+        Name of a file containing optical throughput as a function of
+        wavelength data. Must be in a format readable by
+        `astropy.table.Table.read()` and use column names `Wavelength` and
+        `Throughput`. If the data file does not provide units nm and
+        dimensionless unscaled are assumed.
+    central_obstruction : astropy.units.Quantity, optional
+        Diameter of the central obstruction of the entrance pupil, if any.
+        If not specified an unobstructed pupil is assumed.
+
+    Attributes
+    ----------
+    aperture : astropy.units.Quantity
+        Same as parameters.
+    central_obstruction : astropy.units.Quantity
+        Same as parameters.
+    aperture_area : astropy.units.Quantity
+        Effective collecting are of the optical system aperture, including
+        the effects of the central obstruction, if any.
+    focal_length : astropy.units.Quantity
+        Same as parameters.
+    focal_ratio : astropy.units.Quantity
+        Effective focal ratio (F/D) of the optical system
+    theta_range : astropy.units.Quantity
+        Pair of angles corresponding to the minimum and maximum angles of
+        incidence in focal plane of the optical system. These can be used
+        by `optical_filter.Filter` objects to calculate cone angle effects
+        for focal plane filters. These are automatically calculated from
+        the central obstruction and entrance pupil diameters and effective
+        focal length assuming a telecentric output. If the optical system
+        is far telecentricty these values should now be used.
+    wavelengths : astropy.units.Quantity
+        Sequence of wavelength values from the tabulated throughput data,
+        loaded from `throughput_filename`.
+    throughout : astropy.units.Quantity
+        Sequence of throughput values from the tabulated throughput data,
+        loaded from `throughout_filename`.
+    """
     def __init__(self, aperture, focal_length, throughput_filename, central_obstruction=0 * u.mm):
-        """ Class representing the overall optical system (e.g. a telescope, including any field flattener, focal
-        reducer or reimaging optics). The Filter class should be used for optical filters.
-
-        Args:
-            aperture (Quantity): diameter of the entrance pupil
-            focal_length (Quantity): effective focal length
-            throughput_filename (string): name of file containing optical throughput as a function of wavelength data.
-                Must be in a format readable by `astropy.table.Table.read()` and use column names `Wavelength` and
-                `Throughput`. If the data file does not provide units nm and dimensionless unscaled are assumed.
-            central_obstruction (Quantity, optional): diameter of the central obstruction of the entrance pupil, if any.
-        """
 
         self.aperture = ensure_unit(aperture, u.mm)
         self.central_obstruction = ensure_unit(central_obstruction, u.mm)

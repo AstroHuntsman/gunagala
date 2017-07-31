@@ -2,6 +2,9 @@
 Gunagala
 ****************
 
+Introduction
+============
+
 Gungala is a Python package for modelling the performance of astronomical instruments, including SNR/ETC/sensitivity
 limit calculations and generation of simulated data.
 
@@ -18,7 +21,31 @@ Gunagala is the word for sky in Kamilaroi/Gamilaraay, the language of the Tradit
 Spring Observatory stands
 (ref: `www.dnathan.com <http://www.dnathan.com/language/gamilaraay/dictionary/GAM_G.HTM#gunagala>`_).
 
+Installation
+============
+
+Requirements
+------------
+
+Installing with pip
+-------------------
+
+GitHub
+------
+
+Examples
+========
+
+The Gunagala package includes several examples in the form of `Jupyter<https://jupyter.org>`_ notebooks. These can be
+found in the `gungala/examples` directory after installing Gunagala, or they can be viewed directly in the GitHub
+repository by going to https://github.com/AstroHuntsman/gunagala/tree/master/examples and clicking on the `.ipynb`
+files.
+
 Reference/API
 =============
 
 .. automodapi:: gunagala
+
+.. automodapi:: gunagala.imager
+
+.. automodapi:: gunagala.optic
