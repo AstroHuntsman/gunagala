@@ -71,8 +71,8 @@ using::
 
 or from within a Python interpreter with::
 
-  >>> import gunagala
-  >>> gunagala.test()
+  ``>>>`` import gunagala
+  ``>>>`` gunagala.test()
 
 Examples
 ========
