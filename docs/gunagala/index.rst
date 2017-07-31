@@ -39,12 +39,27 @@ Depending on the configuration of your system you may want to use pip's ``--user
 the install location. See the pip documentation for details.
 
 Pip will automatically install the Python packages required by Gunagala (``numpy``, ``scipy``, ``astropy``, ``PyYAML``,
-``matplotlib`` and their dependencies) if they are not already installed.
+``matplotlib`` and their dependencies) if they are not already installed. If you want to install specific versions
+of the required packages from other sources do this before installing Gunagala.
 
 Installing from source
 ----------------------
 
-The project source is in a GitHub repository at https://github.com/AstroHuntsman/gunagala. 
+The project source is in a GitHub repository at https://github.com/AstroHuntsman/gunagala. To install using git on the
+command line::
+
+  $ cd ~/Build
+  $ git clone https://github.com/AstroHuntsman/gunagala.git
+  $ cd gunagala
+  $ python setup.py install
+
+Alternatively if you expect to make changes to the Gunagala code install with the ``develop`` options instead::
+
+  $ python setup.py develop
+
+Setuptools will automatically install the Python packages required by Gunagala (``numpy``, ``scipy``, ``astropy``,
+``PyYAML``, ``matplotlib`` and their dependencies) if they are not already installed. If you want to install specific
+versions of the required packages from other sources do this before installing Gunagala.
 
 Running the test suite
 ----------------------
