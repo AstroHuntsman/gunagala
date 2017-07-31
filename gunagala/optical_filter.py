@@ -53,19 +53,11 @@ class Filter:
         for real interference filters range from ~1.5 to ~2, and are in
         general polarisation dependent (not modelled here). Default 1.75.
     theta_range : astropy.units.Quantity, optional
-        2 element quantity specifying the range of angles of incidence
+        2 element Quantity specifying the range of angles of incidence
         (min, max). If specified this will be used to model the effect of
         a converging beam on the calculated filter parameters (FWHM,
         lambda_c, etc).
 
-    Attributes
-    ----------
-    peak
-    lambda_peak
-    FWHM
-    lambda_c
-    apply_aoi
-    theta_range
     """
     def __init__(self,
                  transmission_filename=None,
@@ -144,6 +136,16 @@ class Filter:
 
     @property
     def theta_range(self):
+        """
+        2 element Quantity specifying the range of angles of incidence
+        (min, max).
+
+        Returns
+        -------
+        theta_range: astropy.units.Quantity
+            2 element Quantity specifying the range of angles of incidence
+            (min, max).
+        """
         return self._theta_range
 
     @theta_range.setter
