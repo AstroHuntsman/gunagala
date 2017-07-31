@@ -66,7 +66,7 @@ class Optic:
     wavelengths : astropy.units.Quantity
         Sequence of wavelength values from the tabulated throughput data,
         loaded from `throughput_filename`.
-    throughout : astropy.units.Quantity
+    throughput : astropy.units.Quantity
         Sequence of throughput values from the tabulated throughput data,
         loaded from `throughout_filename`.
     """

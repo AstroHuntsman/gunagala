@@ -19,7 +19,54 @@ data_dir = 'data/performance_data'
 
 
 class Filter:
+    """
+    Class representing an optical bandpass filter.
 
+    The filter bandpass can be defined either by a table of transmission
+    versus wavelength data or by one of the included analytic functions:
+    Butterworth function or Chebyshev Type I.
+
+    Parameters
+    ----------
+    transmission_filename : str, optional
+        Name of file containing transmission as a function of wavelength
+        data. Must be in a format readable by `astropy.table.Table.read()`
+        and use column names `Wavelength` and `Transmission`. If the
+        data file does not provide units nm and dimensionless unscaled
+        will be assumed.
+    chebyshev_params : dict, optional
+        Dictionary containing the parameters wave1, wave2, order, ripple
+        and peak for the Chebyshev Type I parameterised filter model.
+    butterworth_params : dict, optional
+        Dictionary containing the parameters wave1, wave2, order and peak
+        for the Butterworth parameterised filter model.
+    apply_aoi : bool, optional
+        Whether to model angle of incidence effects due to installation of
+        the filter in a converging beam. If the filter is to be installed
+        in a pupil or the transmission profile already includes these
+        effects this should be set to False. If set to True then calls to
+        the `transmission()` method will have to specify the range of
+        angles of incidence. Default False
+    n_eff : float, optional
+        Effective refractive index value for the filter coatings. This is
+        used only by the angle of incidence effect model. Typical values
+        for real interference filters range from ~1.5 to ~2, and are in
+        general polarisation dependent (not modelled here). Default 1.75.
+    theta_range : astropy.units.Quantity, optional
+        2 element quantity specifying the range of angles of incidence
+        (min, max). If specified this will be used to model the effect of
+        a converging beam on the calculated filter parameters (FWHM,
+        lambda_c, etc).
+
+    Attributes
+    ----------
+    peak
+    lambda_peak
+    FWHM
+    lambda_c
+    apply_aoi
+    theta_range
+    """
     def __init__(self,
                  transmission_filename=None,
                  chebyshev_params=None,
@@ -27,31 +74,8 @@ class Filter:
                  apply_aoi=False,
                  n_eff=1.75,
                  theta_range=None,
-                 *kwargs):
-        """Class representing an optical bandpass filter. The filter bandpass can be defined either by a table of
-        transmission versus wavelength data or by one of the included analytic functions: Butterworth function or
-        Chebyshev Type I.
+                *kwargs):
 
-        Args:
-            transmission_filename (string, optional): name of file containing transmission as a function of wavelength
-                data. Must be in a format readable by `astropy.table.Table.read()` and use column names `Wavelength`
-                and `Transmission`. If the data file does not provide units nm and dimensionless unscaled will be
-                assumed.
-            chebyshev_params (dict, optional): dictionary containing the parameters wave1, wave2, order, ripple and
-                peak for the Chebyshev Type I parameterised filter model.
-            butterworth_params(dict, optional): dictionary containing the parameters wave1, wave2, order and peak for
-                the Butterworth parameterised filter model.
-            apply_aoi (bool, optional, default False): Whether to model angle of incidence effects due to installation
-                of the filter in a converging beam. If the filter is to be intalled in a pupil or the transmission
-                profile already includes these effects this should be set to False. If set to True then calls to
-                the transmission() method will have to specify the range of angles of incidence.
-            n_eff (optional, default 1.75): effective refractive index value for the filter coatings. This is used only
-                by the angle of incidence effect model. Typical values for real interference filters range from ~1.5 to
-                ~2, and are in general polarisation dependent (not modelled here).
-            theta_range (Quantity, optional): 2 element quantity specifying the range of angles of incidence (min, max).
-                If specified this will be used to model the effect of a converging beam on the calculated filter
-                parameters (FWHM, lambda_c, etc).
-        """
         n_args = np.count_nonzero((transmission_filename, chebyshev_params, butterworth_params))
         if n_args != 1:
             raise ValueError("One and only one of `tranmission_filename`, `chebyshev_params` & `butterworth_params`"
@@ -129,54 +153,77 @@ class Filter:
 
     @property
     def peak(self):
-        """Peak transmission of the filter
+        """
+        Peak transmission of the filter
 
-        Returns:
-            Quantity: peak transmission of the filter in dimensionless unscaled units
+        Returns
+        -------
+        peak : astropy.units.Quantity
+            Peak transmission of the filter in dimensionless unscaled units
         """
         return self._peak
 
     @property
     def lambda_peak(self):
-        """Wavelength at peak transmission of the filter
+        """
+        Wavelength at peak transmission of the filter
 
-        Returns:
-            Quantity: wavelength at peak transmission
+        Returns
+        -------
+        lambda_peak : astropy.units.Quantity
+            Wavelength at peak transmission
         """
         return self._lambda_peak
 
     @property
     def FWHM(self):
-        """Full-Width at Half Maximum of the filter
+        """
+        Full-Width at Half Maximum of the filter
 
-        Returns:
-            Quantity: FWHM of the filter transmission profile
+        Returns
+        -------
+        FWHM : astropy.units.Quantity
+            FWHM of the filter transmission profile
         """
         return self._FWHM
 
     @property
     def lambda_c(self):
-        """Central wavelength of the filter, defined here as the mid point between the two wavelengths where
-        transmission is half peak transmission.
+        """
+        Central wavelength of the filter, defined here as the mid point
+        between the two wavelengths where transmission is half peak
+        transmission.
 
-        Returns:
-            Quantity: central wavelength
+        Returns
+        -------
+        lambda_c : astropy.units.Quantity
+            Central wavelength
         """
         return self._lambda_c
 
     def transmission(self, waves, theta_range=None):
-        """Return filter transmission at the given wavelength(s). For filter bandpasses defined by data tables this
-        will interpolate/extrapolate as required while for filter bandpasses defined by analytic expressions it will
-        be calculated directly.
+        """
+        Return filter transmission at the given wavelength(s).
 
-        Args:
-            waves (Quantity): wavelength(s) for which the filter transmission is required
-            theta_range (optional, Quantity): 2 element quantity specifying the range of angles of incidence (min, max).
-                If specified this will be used to model the effect of a converging beam on the filter bandpass. If not
-                specified the default values set when creating the Filter instance will be used.
+        For filter bandpasses defined by data tables this will
+        interpolate/extrapolate as required while for filter bandpasses
+        defined by analytic expressions it will be calculated directly.
 
-        Returns:
-            Quantity: filter transmission at the given wavelength(s)
+        Parameters
+        ----------
+        waves : astropy.units.Quantity
+            Wavelength(s) for which the filter transmission is required
+        theta_range : astropy.units.Quantity, optional
+            2 element quantity specifying the range of angles of incidence
+            (min, max). If specified this will be used to model the effect
+            of a converging beam on the filter bandpass. If not specified
+            the default values set when creating the Filter instance will
+            be used.
+
+        Returns
+        -------
+        waves : astropy.units.Quantity
+            Filter transmission at the given wavelength(s)
         """
         waves = ensure_unit(waves, u.nm)
 
@@ -276,10 +323,26 @@ class Filter:
 
 def butter_band(w, w1, w2, N, scale=0.95):
     """
-    Simple Butterworth bandpass filter function in wavelength space
-    To be more realistic this should probably be a Chebyshev Type I function
-    instead, and should definitely include cone angle effect but at f/5.34
-    (Space Eye focal ratio) the latter at least is pretty insignficant
+    Simple Butterworth bandpass filter function in wavelength space.
+
+    Parameters
+    ----------
+    w : astropy.units.Quantity
+        Wavelength
+    w1 : astropy.units.Quantity
+        Wavelength of short wavelength edge of bandpass
+    w2 : astropy.units.Quantity
+        Wavelength of long wavelength edge of bandpass
+    N : int
+        Order of the Butterworth function
+    scale : float, optional
+        Scaling to apply to the transmission of the Butterworth function,
+        default 0.95
+
+    Returns
+    -------
+    transmission : astropy.units.Quantity
+        Filter transmission at wavelength `w`.
     """
     # Bandpass implemented as low pass and high pass in series
     w = ensure_unit(w, u.nm)
@@ -290,9 +353,29 @@ def butter_band(w, w1, w2, N, scale=0.95):
 
 def cheby_band(w, w1, w2, N, ripple=1, scale=0.95):
     """
-    Simple Chebyshev Type I bandpass filter function in wavelength space
-    To be more realistic this should definitely include cone angle effect
-    but at f/5.34 (Space Eye focal ratio) that is pretty insignficant
+    Simple Chebyshev Type I bandpass filter function in wavelength space.
+
+    Parameters
+    ----------
+    w : astropy.units.Quantity
+        Wavelength
+    w1 : astropy.units.Quantity
+        Wavelength of short wavelength edge of bandpass
+    w2 : astropy.units.Quantity
+        Wavelength of long wavelength edge of bandpass
+    N : int
+        Order of the Chebyshev function
+    ripple : float, optional
+        Scaling to apply to the ripple of the Chebyshev function, default
+        1.0
+    scale : float, optional
+        Scaling to apply to the transmission of the Chebyshev function,
+        default 0.95
+
+    Returns
+    -------
+    transmission : astropy.units.Quantity
+        Filter transmission at wavelength `w`.
     """
     # Bandpass implemented as low pass and high pass in series
     w = ensure_unit(w, u.nm)

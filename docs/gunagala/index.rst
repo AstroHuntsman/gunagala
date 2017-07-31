@@ -47,5 +47,10 @@ Reference/API
 .. automodapi:: gunagala
 
 .. automodapi:: gunagala.imager
+  :allowed-package-names: gunagala.imager
 
 .. automodapi:: gunagala.optic
+  :allowed-package-names: gunagala.optic
+
+.. automodapi:: gunagala.optical_filter
+  :allowed-package-names: gunagala.optical_filter
