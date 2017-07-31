@@ -828,7 +828,7 @@ class Imager:
         -----
         The conversion between band averaged magnitudes and total flux
         depends somewhat on the spectrum of the source. For this
-        calculation we assume :mat:`F_\\nu` is constant.
+        calculation we assume :math:`F_\\nu` is constant.
         """
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
