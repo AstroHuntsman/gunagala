@@ -12,20 +12,24 @@ from .utils import ensure_unit
 
 
 class PSF(Fittable2DModel):
+    """
+    Abstract base class representing a 2D point spread function.
 
+    Used to calculate pixelated version of the PSF and associated
+    parameters useful for point source signal to noise and saturation
+    limit calculations.
+
+    Parameters
+    ----------
+    FWHM : astropy.units.Quantity
+        Full Width at Half-Maximum of the PSF in angle on the sky units.
+    pixel_scale : astropy.units.Quantity, optional
+        Pixel scale (angle/pixel) to use when calculating pixellated point
+        spread functions or related parameters. Does not need to be set on
+        object creation but must be set before before pixellation function
+        can be used.
+    """
     def __init__(self, FWHM, pixel_scale=None, **kwargs):
-        """
-        Abstract base class representing a 2D point spread function.
-
-        Used to calculate pixelated version of the PSF and associated parameters useful for
-        point source signal to noise and saturation limit calculations.
-
-        Args:
-            FWHM (Quantity): Full Width at Half-Maximum of the PSF in angle on the sky units
-            pixel_scale (Quantity, optional): pixel scale (angle/pixel) to use when calculating pixellated point
-                spread functions or related parameters. Does not need to be set on object creation but must be set
-                before before pixellation function can be used.
-        """
         self._FWHM = ensure_unit(FWHM, u.arcsecond)
 
         if pixel_scale:
@@ -73,7 +77,14 @@ class PSF(Fittable2DModel):
 
     def pixellated(self, pixel_scale=None, size=21, offsets=(0.0, 0.0)):
         """
-        Calculates a pixellated version of the PSF for a given pixel scale
+        Calculates a pixellated version of the PSF for a given pixel
+        scale.
+
+        Parameters
+        ----------
+        pixel_scale : astropy.units.Quantity, optional
+        size : int, optional
+        offset : tuple of floats, optional
         """
         if not pixel_scale:
             pixel_scale = self.pixel_scale
@@ -89,8 +100,9 @@ class PSF(Fittable2DModel):
 
     def _get_peak(self, pixel_scale=None):
         """
-        Calculate the peak pixel value (as a fraction of total counts) for a PSF centred
-        on a pixel. This is useful for calculating saturation limits for point sources.
+        Calculate the peak pixel value (as a fraction of total counts) for
+        a PSF centred on a pixel. This is useful for calculating
+        saturation limits for point sources.
         """
         # Odd number of pixels (1) so offsets = (0, 0) is centred on a pixel
         centred_psf = self.pixellated(pixel_scale, 1, offsets=(0, 0))
@@ -98,8 +110,9 @@ class PSF(Fittable2DModel):
 
     def _get_n_pix(self, pixel_scale=None, size=20):
         """
-        Calculate the effective number of pixels for PSF fitting photometry with this
-        PSF, in the worse case where the PSF is centred on the corner of a pixel.
+        Calculate the effective number of pixels for PSF fitting
+        photometry with this PSF, in the worse case where the PSF is
+        centred on the corner of a pixel.
         """
         # Want a even number of pixels.
         size = size + size % 2
@@ -112,26 +125,34 @@ class PSF(Fittable2DModel):
 
 
 class Moffat_PSF(PSF, Moffat2D):
+    """
+    Class representing a 2D Moffat profile point spread function.
 
+    Used to calculate pixelated version of the PSF and associated
+    parameters useful for point source signal to noise and saturation
+    limit calculations.
+
+    Parameters
+    ----------
+    FWHM : astropy.units.Quantity
+        Full Width at Half-Maximum of the PSF in angle on the sky units
+    shape : float, optional
+        Shape parameter of the Moffat function, must be > 1, default 2.5
+    pixel_scale : astropy.units.Quantity, optional
+        Pixel scale (angle/pixel) to use when calculating pixellated point
+        spread functions or related parameters. Does not need to be set
+        on object creation but must be set before before pixellation
+        function can be used.
+
+    Notes
+    -----
+    Smaller values of the shape parameter correspond to 'wingier'
+    profiles. A value of 4.765 would give the best fit to pure Kolmogorov
+    atmospheric turbulence. When instrumental effects are added a lower
+    value is appropriate. IRAF uses a default of 2.5.
+    """
     def __init__(self, model=None, shape=2.5, **kwargs):
-        """
-        Class representing a 2D Moffat profile point spread function.
 
-        Used to calculate pixelated version of the PSF and associated parameters useful for
-        point source signal to noise and saturation limit calculations.
-
-        Args:
-            FWHM (Quantity): Full Width at Half-Maximum of the PSF in angle on the sky units
-            shape (optional, default 2.5): shape parameter of the Moffat function, must be > 1
-            pixel_scale (Quantity, optional): pixel scale (angle/pixel) to use when calculating pixellated point
-                spread functions or related parameters. Does not need to be set on object creation but must be set
-                before before pixellation function can be used.
-
-        Smaller values of the shape parameter correspond to 'wingier' profiles.
-        A value of 4.765 would give the best fit to pure Kolmogorov atmospheric turbulence.
-        When instrumental effects are added a lower value is appropriate.
-        IRAF uses a default of 2.5.
-        """
         if shape <= 1.0:
             raise ValueError('shape must be greater than 1!')
 

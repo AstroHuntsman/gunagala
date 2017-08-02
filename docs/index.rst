@@ -92,7 +92,6 @@ Reference/API
   :no-main-docstr:
 
 .. automodapi:: gunagala.imager
-  :no-main-docstr:
   :skip: ensure_unit
   :skip: load_config
   :skip: Filter
@@ -109,12 +108,10 @@ Reference/API
   :no-inheritance-diagram:
 
 .. automodapi:: gunagala.optic
-  :no-main-docstr:
   :skip: Table
   :no-inheritance-diagram:
 
 .. automodapi:: gunagala.optical_filter
-  :no-main-docstr:
   :skip: Table
   :skip: interp1d
   :skip: brentq
@@ -123,3 +120,15 @@ Reference/API
   :skip: minimize_scalar
   :skip: eval_chebyt
   :no-inheritance-diagram:
+
+.. automodapi:: gunagala.camera
+  :skip: Table
+  :skip: get_pkg_data_filename
+  :skip: ensure_unit
+  :no-inheritance-diagram:
+
+.. automodapi:: gunagala.psf
+  :skip: discretize_model
+  :skip: Fittable2DModel
+  :skip: Moffat2D
+  :skip: ensure_unit
