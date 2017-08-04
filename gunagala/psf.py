@@ -39,6 +39,14 @@ class PSF(Fittable2DModel):
 
     @property
     def FWHM(self):
+        """
+        Full Width at Half-Maximum of the PSF.
+
+        Returns
+        -------
+        FWHM : astropy.units.Quantity
+            Full Width at Half-Maximum in angle on the sky units.
+        """
         return self._FWHM
 
     @FWHM.setter
@@ -50,6 +58,15 @@ class PSF(Fittable2DModel):
 
     @property
     def pixel_scale(self):
+        """
+        Pixel scale used when calculating pixellated point spread
+        functions or related parameters.
+
+        Returns
+        -------
+        pixel_scale : astropy.units.Quantity
+            Pixel scale in angle on the sky per pixel units.
+        """
         try:
             return self._pixel_scale
         except AttributeError:
@@ -63,6 +80,20 @@ class PSF(Fittable2DModel):
 
     @property
     def n_pix(self):
+        """
+        The PSF's effective number of pixels for the worse case where the
+        PSF is centred on the corner of a pixel.
+
+        The effective number of pixels is for signal to noise calculations
+        for PSF fitting photometry. The signal to noise for PSF fitting
+        photometry is the same as if the signal were evenly distributed
+        over this many pixels.
+
+        Returns
+        -------
+        n_pix : astropy.units.Quantity
+            Effective number of pixels
+        """
         try:
             return self._n_pix
         except AttributeError:
@@ -70,6 +101,20 @@ class PSF(Fittable2DModel):
 
     @property
     def peak(self):
+        """
+        The maximum fraction of the total signal that can fall in a single
+        pixel.
+
+        This is simply the central pixel value of the PSF when it is
+        perfectly centred on a pixel centre. This is useful for saturation
+        limit calculations.
+
+        Returns
+        -------
+        peak : astropy.units.Quantity
+            Maximum fraction of the total signal that can fall in a single
+            pixel, in 1/pixel units.
+        """
         try:
             return self._peak
         except AttributeError:
@@ -160,6 +205,14 @@ class Moffat_PSF(PSF, Moffat2D):
 
     @property
     def shape(self):
+        """
+        Shape parameter of the Moffat function, see Notes.
+
+        Returns
+        -------
+        shape : float
+            Shape parameter value.
+        """
         return self.alpha
 
     @shape.setter

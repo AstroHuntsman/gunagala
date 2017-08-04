@@ -18,10 +18,10 @@ sun_location = 'ftp://ftp.stsci.edu/cdbs/grid/k93models/standards/sun_castelli.f
 
 
 class Sky:
+    """
+    Abstract base class for sky background models.
+    """
     def __init__(self):
-        """
-        Abstract base class for sky background models
-        """
         pass
 
     def surface_brightness(*args, **kwargs):
@@ -29,16 +29,18 @@ class Sky:
 
 
 class Simple(Sky):
+    """
+    Simple sky background model using fixed, uniform, pre-determined
+    surface brightness values for specific filter bands.
 
+    Parameters
+    ----------
+    surface_brightness : dict
+        Dictionary containing filter_name, surface brightness key, value
+        pairs. The surface brightnesses should be `astropy.units.Quantity`
+        objects in ABmag units (the 'per arcsecond' is assumed).
+    """
     def __init__(self, surface_brightness, **kwargs):
-        """
-        Simple sky background model using fixed, uniform, pre-determined surface brightness values for a selection
-        of filter bands.
-
-        Args:
-            surface_brightness (dict): dictionary containing filter_name, surface brightness key, value pairs. The
-                surface brightnesses should be expressed in AB magnitudes ('per square arcsecond')
-        """
         self._surface_brightness = {}
 
         for filter_name, sb in surface_brightness.items():
@@ -46,13 +48,19 @@ class Simple(Sky):
 
     def surface_brightness(self, filter_name):
         """
-        Returns the pre-determined sky surface brightness value for a given named filter
+        Returns the pre-determined sky surface brightness value for a
+        given named filter.
 
-        Args:
-            filter_name: name of the optical filter in use
+        Parameters
+        ----------
+        filter_name : str
+            Name of the optical filter to use.
 
-        Returns:
-            Quantity: sky surface brightness in AB magnitude units ('per square arcsecond')
+        Returns
+        -------
+        surface_brightness : astropy.units.Quantity
+            Sky surface brightness in ABmag units (the 'per square
+            arcsecond' is implied).
         """
         try:
             sb = self._surface_brightness[filter_name]
@@ -63,6 +71,16 @@ class Simple(Sky):
 
 
 class ZodiacalLight(Sky):
+    """
+    Class representing the Zodiacal Light sky background.
+
+    Includes methods that return the absolute surface brightness spectral
+    flux density at the ecliptic poles as well as the relative brightness
+    variations as a function of position on the sky.
+
+    Attributes
+    ----------
+    """
     # Parameters for the zodiacal light spectrum
 
     # Colina, Bohlin & Castelli solar spectrum is normalised to V band flux
@@ -105,19 +123,27 @@ class ZodiacalLight(Sky):
                          [230, 212, 195, 178, 163, 148, 134, 105, 83, 72]]).transpose()
 
     def __init__(self, solar_path=get_pkg_data_filename('data/sky_data/sun_castelli.fits'), **kwargs):
-        """
-        Class representing the Zodiacal Light sky background.
-        Includes methods that return the absolute surface brightness spectral flux density at the ecliptic poles as
-        well as the relative brightness variations as a function of position on the sky.
-        """
         # Pre-calculate zodiacal light spectrum for later use.
         self._calculate_spectrum(solar_path)
         self._calculate_spatial()
 
-
     def surface_brightness(self, **kwargs):
         """
-        Returns the Zodiacal Light ecliptic pole surface brightness in photon spectral flux density units
+        Generates a function that will calculate Zodiacal Light ecliptic
+        pole surface brightness as a function of wavelength, in photon
+        spectral flux density units.
+
+        The returned function take a single `astropy.units.Quantity`
+        parameter, the wavelength(s) at which the Zodiacal Light surface
+        brightness is required. It returns an `astropy.units.Quantity`
+        object containing the corresponding surface brightness values. See
+        `imager.Imager` for a usage example.
+
+        Returns
+        -------
+        surface_brightness : callable
+            Function that calculates the ecliptic pole surface brightness
+            for arbitrary wavelength(s).
         """
         # Interpolator strips units, keep them safe for later...
         unit = self.photon_sfd.unit
@@ -126,6 +152,64 @@ class ZodiacalLight(Sky):
         # Return function for calculating photon SFD at arbitrary wavelengths
         return lambda x: interpolator(x.to(u.um).value) * unit
 
+    def relative_brightness(self, position, time):
+        """
+        Calculate the Zodiacal Light surface brightness relative to that
+        at the ecliptic poles for a given sky position and observing time.
+
+        At present to model includes the annual rotation of the Zodiacal
+        Light distribution as the Earth orbits the Sun but does not
+        include second order effects due to the inclination of the Earth's
+        orbit relative to the mid plane of the Zodiacal dust disc.
+
+        Parameters
+        ----------
+        position : astropy.coordinates.SkyCoord or str
+            Sky position(s) in the form of either a
+            `astropy.coordinates.SkyCoord` object or a string that can be
+            converted into one.
+        time : astropy.time.Time or str
+            Time of observation in the form of either an
+            `astropy.time.Time` or a string that can be converted into
+            one.
+
+        Returns
+        -------
+        rel_SB : float
+            Relative sky brightness of the Zodiacal light
+        """
+        # Convert position(s) to SkyCoord if not already one
+        if not isinstance(position, SkyCoord):
+            position = SkyCoord(position)
+
+        if len(position.shape) == 2:
+            shape = position.shape
+        else:
+            shape = False
+
+        # Convert time to a Time if not already one
+        if not isinstance(time, Time):
+            time = Time(time)
+
+        # Convert to ecliptic coordinates at current epoch
+        position = position.transform_to(GeocentricTrueEcliptic(equinox=time))
+
+        # Get position of the Sun
+        sun = get_sun(time).transform_to(GeocentricTrueEcliptic(equinox=time))
+
+        # Ecliptic latitude, remapped to range 0 to 180 degrees, in radians
+        beta = (Angle(90 * u.degree) - position.lat).radian
+        # Ecliptic longitude minus Sun's ecliptic longitude, remapped to
+        # range 0 to 360 degrees, in radians
+        llsun = (position.lon - sun.lon).wrap_at(360 * u.degree).radian
+
+        rl = self._spatial(beta, llsun, grid=False)
+
+        if shape:
+            rl = rl.reshape((shape[1], shape[0]))
+            rl = rl.T
+
+        return rl
 
     def _calculate_spectrum(self, solar_path):
         """
@@ -208,48 +292,3 @@ class ZodiacalLight(Sky):
         self._spatial = RectSphereBivariateSpline(beta, llsun, zl_patched, \
                                                   pole_continuity=(False,False), pole_values=(1.0, 1.0), \
                                                   pole_exact=True, pole_flat=False)
-
-    def relative_brightness(self, position, time):
-        """
-        Calculate the Zodiacal Light surface brightness relative to that at the ecliptic poles for a given sky position and observing time.
-        Args:
-            position: sky position(s) in the form of either an astropy.coordinates.SkyCoord
-                object or a string that can be converted into one.
-            time: time of observation in the form of either an astropy.time.Time
-                or a string that can be converted into one.
-
-        Returns:
-            rel_SB: relative sky brightness of the Zodiacal light
-        """
-        # Convert position(s) to SkyCoord if not already one
-        if not isinstance(position, SkyCoord):
-            position = SkyCoord(position)
-
-        if len(position.shape) == 2:
-            shape = position.shape
-        else:
-            shape = False
-
-        # Convert time to a Time if not already one
-        if not isinstance(time, Time):
-            time = Time(time)
-
-        # Convert to ecliptic coordinates at current epoch
-        position = position.transform_to(GeocentricTrueEcliptic(equinox=time))
-
-        # Get position of the Sun
-        sun = get_sun(time).transform_to(GeocentricTrueEcliptic(equinox=time))
-
-        # Ecliptic latitude, remapped to range 0 to 180 degrees, in radians
-        beta = (Angle(90 * u.degree) - position.lat).radian
-        # Ecliptic longitude minus Sun's ecliptic longitude, remapped to
-        # range 0 to 360 degrees, in radians
-        llsun = (position.lon - sun.lon).wrap_at(360 * u.degree).radian
-
-        rl = self._spatial(beta, llsun, grid=False)
-
-        if shape:
-            rl = rl.reshape((shape[1], shape[0]))
-            rl = rl.T
-
-        return rl

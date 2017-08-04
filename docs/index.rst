@@ -85,6 +85,9 @@ found in the `gungala/examples` directory after installing Gunagala, or they can
 repository by going to https://github.com/AstroHuntsman/gunagala/tree/master/examples and clicking on the ``.ipynb``
 files.
 
+Contributing
+============
+
 Reference/API
 =============
 
@@ -131,4 +134,16 @@ Reference/API
   :skip: discretize_model
   :skip: Fittable2DModel
   :skip: Moffat2D
+  :skip: ensure_unit
+
+.. automodapi:: gunagala.sky
+  :skip: interp1d
+  :skip: RectSphereBivariateSpline
+  :skip: SmoothBivariateSpline
+  :skip: SkyCoord
+  :skip: GeocentricTrueEcliptic
+  :skip: get_sun
+  :skip: Angle
+  :skip: Time
+  :skip: get_pkg_data_filename
   :skip: ensure_unit
