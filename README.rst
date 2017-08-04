@@ -7,13 +7,14 @@ Gunagala
 
 .. image:: https://coveralls.io/repos/github/AstroHuntsman/gunagala/badge.svg?branch=master
     :target: https://coveralls.io/github/AstroHuntsman/gunagala?branch=master
+    :alt: Coverage status
 
 .. image:: https://readthedocs.org/projects/gunagala/badge/?version=latest
     :target: https://gunagala.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
 .. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
-    :target: https://www.astropy.org
+    :target: http://www.astropy.org
     :alt: Powered by Astropy Badge
 
 This is a Python package for modelling the performance of astronomical instruments, including SNR/ETC/sensitivity limit
