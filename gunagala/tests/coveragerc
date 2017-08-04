@@ -11,7 +11,7 @@ omit =
    {packagename}/*/tests/*
    {packagename}/*/*/tests/*
    {packagename}/version*
-   {packagename}/astroimsim* # Only in the repo to be cannibalised
+   {packagename}/astroimsim*
 
 [report]
 exclude_lines =
