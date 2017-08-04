@@ -189,6 +189,11 @@ class Moffat_PSF(PSF, Moffat2D):
         on object creation but must be set before before pixellation
         function can be used.
 
+    Attributes
+    ----------
+    n_pix: astropy.units.Quantity
+            Effective number of pixels
+
     Notes
     -----
     Smaller values of the shape parameter correspond to 'wingier'

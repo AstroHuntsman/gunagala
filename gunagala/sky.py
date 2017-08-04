@@ -80,50 +80,61 @@ class ZodiacalLight(Sky):
 
     Attributes
     ----------
+    waves : astropy.units.Quantity
+        Sequence of wavelengths used by the internal model
+    self.sfd : astropy.units.Quantity
+        Sequence of ecliptic pole surface brightness spectral flux density
+        values corresponding to the wavelengths in `waves`, in energy flux
+        per unit wavelength units.
+    self.photon_sfd : astropy.units.Quantity
+        Sequence of ecliptic pole surface brightness spectral flux density
+        values corresponding to the wavelengths in `waves`, in photon flux
+        per unit wavelength units.
     """
     # Parameters for the zodiacal light spectrum
 
     # Colina, Bohlin & Castelli solar spectrum is normalised to V band flux
     # of 184.2 ergs/s/cm^2/A,
-    solar_normalisation = 184.2 * u.erg * u.second**-1 * u.cm**-2 * u.Angstrom**-1
+    _solar_normalisation = 184.2 * u.erg * u.second**-1 * u.cm**-2 * u.Angstrom**-1
     # Leinert at al NEP zodical light 1.81e-18 erg/s/cm^2/A/arcsec^2 at 0.5 um,
     # Aldering suggests using 0.01 dex lower.
-    zl_nep = 1.81e-18 * u.erg * u.second**-1 * u.cm**-2 * u.Angstrom**-1 * \
+    _zl_nep = 1.81e-18 * u.erg * u.second**-1 * u.cm**-2 * u.Angstrom**-1 * \
              u.arcsecond**-2 * 10**(-0.01)
-    zl_normalisation = zl_nep / solar_normalisation
+    _zl_normalisation = _zl_nep / _solar_normalisation
     # Central wavelength for reddening/normalisation
-    lambda_c = 0.5 * u.um
+    _lambda_c = 0.5 * u.um
     # Aldering reddening parameters
-    f_blue = 0.9
-    f_red = 0.48
+    _f_blue = 0.9
+    _f_red = 0.48
 
     # Parameters for the zodical light spatial dependence
 
     # Data from table 17, Leinert et al (1997).
-    llsun = np.array([0, 5 ,10, 15, 20, 25, 30, 35, 40, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180])
-    beta = np.array([0, 5, 10, 15, 20, 25, 30, 45, 60, 75])
-    zl_scale = np.array([[np.NaN, np.NaN, np.NaN, 3140, 1610, 985, 640, 275, 150, 100], \
-                         [np.NaN, np.NaN, np.NaN, 2940, 1540, 945, 625, 271, 150, 100], \
-                         [np.NaN, np.NaN, 4740, 2470, 1370, 865, 590, 264, 148, 100], \
-                         [11500, 6780, 3440, 1860, 1110, 755, 525, 251, 146, 100], \
-                         [6400, 4480, 2410, 1410, 910, 635, 454, 237, 141, 99], \
-                         [3840, 2830, 1730, 1100, 749, 545, 410, 223, 136, 97], \
-                         [2480, 1870, 1220, 845, 615, 467, 365, 207, 131, 95], \
-                         [1650, 1270, 910, 680, 510, 397, 320, 193, 125, 93], \
-                         [1180, 940, 700, 530, 416, 338, 282, 179, 120, 92], \
-                         [910, 730, 555, 442, 356, 292, 250, 166, 116, 90], \
-                         [505, 442, 352, 292, 243, 209, 183, 134, 104, 86], \
-                         [338, 317, 269, 227, 196, 172, 151, 116, 93, 82], \
-                         [259, 251, 225, 193, 166, 147, 132, 104, 86, 79], \
-                         [212, 210, 197, 170, 150, 133, 119, 96, 82, 77], \
-                         [188, 186, 177, 154, 138, 125, 113, 90, 77, 74], \
-                         [179, 178, 166, 147, 134, 122, 110, 90, 77, 73], \
-                         [179, 178, 165, 148, 137, 127, 116, 96, 79, 72], \
-                         [196, 192, 179, 165, 151, 141, 131, 104, 82, 72], \
-                         [230, 212, 195, 178, 163, 148, 134, 105, 83, 72]]).transpose()
+    _llsun = np.array([0, 5 ,10, 15, 20, 25, 30, 35, 40, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180])
+    _beta = np.array([0, 5, 10, 15, 20, 25, 30, 45, 60, 75])
+    _zl_scale = np.array([[np.NaN, np.NaN, np.NaN, 3140, 1610, 985, 640, 275, 150, 100], \
+                          [np.NaN, np.NaN, np.NaN, 2940, 1540, 945, 625, 271, 150, 100], \
+                          [np.NaN, np.NaN, 4740, 2470, 1370, 865, 590, 264, 148, 100], \
+                          [11500, 6780, 3440, 1860, 1110, 755, 525, 251, 146, 100], \
+                          [6400, 4480, 2410, 1410, 910, 635, 454, 237, 141, 99], \
+                          [3840, 2830, 1730, 1100, 749, 545, 410, 223, 136, 97], \
+                          [2480, 1870, 1220, 845, 615, 467, 365, 207, 131, 95], \
+                          [1650, 1270, 910, 680, 510, 397, 320, 193, 125, 93], \
+                          [1180, 940, 700, 530, 416, 338, 282, 179, 120, 92], \
+                          [910, 730, 555, 442, 356, 292, 250, 166, 116, 90], \
+                          [505, 442, 352, 292, 243, 209, 183, 134, 104, 86], \
+                          [338, 317, 269, 227, 196, 172, 151, 116, 93, 82], \
+                          [259, 251, 225, 193, 166, 147, 132, 104, 86, 79], \
+                          [212, 210, 197, 170, 150, 133, 119, 96, 82, 77], \
+                          [188, 186, 177, 154, 138, 125, 113, 90, 77, 74], \
+                          [179, 178, 166, 147, 134, 122, 110, 90, 77, 73], \
+                          [179, 178, 165, 148, 137, 127, 116, 96, 79, 72], \
+                          [196, 192, 179, 165, 151, 141, 131, 104, 82, 72], \
+                          [230, 212, 195, 178, 163, 148, 134, 105, 83, 72]]).transpose()
 
-    def __init__(self, solar_path=get_pkg_data_filename('data/sky_data/sun_castelli.fits'), **kwargs):
+    def __init__(self, **kwargs):
         # Pre-calculate zodiacal light spectrum for later use.
+        solar_path = get_pkg_data_filename('data/sky_data/sun_castelli.fits')
         self._calculate_spectrum(solar_path)
         self._calculate_spatial()
 
@@ -175,8 +186,9 @@ class ZodiacalLight(Sky):
 
         Returns
         -------
-        rel_SB : float
-            Relative sky brightness of the Zodiacal light
+        rel_SB : numpy.array
+            Relative sky brightness of the Zodiacal light at the given
+            sky position(s)
         """
         # Convert position(s) to SkyCoord if not already one
         if not isinstance(position, SkyCoord):
@@ -216,10 +228,10 @@ class ZodiacalLight(Sky):
         Pre-calculates absolute surface brightness spectral flux density of the Zodiacal Light at the ecliptic poles.
         """
         # Load absolute solar spectrum from Collina, Bohlin & Castelli (1996)
-        sun = fits.open(solar_path)
-        sun_waves = sun[1].data['WAVELENGTH'] * u.Angstrom
-        # sfd = spectral flux density
-        sun_sfd = sun[1].data['FLUX'] * u.erg * u.second**-1 * u.cm**-2 * u.Angstrom**-1
+        with fits.open(solar_path) as sun:
+            sun_waves = sun[1].data['WAVELENGTH'] * u.Angstrom
+            # sfd = spectral flux density
+            sun_sfd = sun[1].data['FLUX'] * u.erg * u.second**-1 * u.cm**-2 * u.Angstrom**-1
 
         self.waves = sun_waves.to(u.um)
 
@@ -228,11 +240,11 @@ class ZodiacalLight(Sky):
         # Aldering (2001), as used in the HST ETC (Giavalsico, Sahi, Bohlin (2002)).
 
         # Reddening factor
-        rfactor = np.where(sun_waves < ZodiacalLight.lambda_c, \
-                           1.0 + ZodiacalLight.f_blue * np.log(sun_waves/ZodiacalLight.lambda_c), \
-                           1.0 + ZodiacalLight.f_red * np.log(sun_waves/ZodiacalLight.lambda_c))
+        rfactor = np.where(sun_waves < ZodiacalLight._lambda_c, \
+                           1.0 + ZodiacalLight._f_blue * np.log(sun_waves/ZodiacalLight._lambda_c), \
+                           1.0 + ZodiacalLight._f_red * np.log(sun_waves/ZodiacalLight._lambda_c))
         # Apply normalisation and reddening
-        sfd = sun_sfd * ZodiacalLight.zl_normalisation * rfactor
+        sfd = sun_sfd * ZodiacalLight._zl_normalisation * rfactor
         # #DownWithErgs
         self.sfd = sfd.to(u.Watt * u.m**-2 * u.arcsecond**-2 * u.um**-1)
         # Also calculate in photon spectral flux density units. Fudge needed because spectral density equivalencies
@@ -246,11 +258,11 @@ class ZodiacalLight(Sky):
         Pre-calculate the relative Zodiacal Light brightness variation with sky position
         """
         # Normalise scaling factor to a value of 1.0 at the NEP
-        zl_scale = ZodiacalLight.zl_scale / 77
+        zl_scale = ZodiacalLight._zl_scale / 77
 
         # Expand range of angles to cover the full sphere by using symmetry
-        beta = np.array(np.concatenate((-np.flipud(ZodiacalLight.beta)[:-1], ZodiacalLight.beta))) * u.degree
-        llsun = np.array(np.concatenate((ZodiacalLight.llsun, 360 - np.flipud(ZodiacalLight.llsun)[1:-1]))) * u.degree
+        beta = np.array(np.concatenate((-np.flipud(ZodiacalLight._beta)[:-1], ZodiacalLight._beta))) * u.degree
+        llsun = np.array(np.concatenate((ZodiacalLight._llsun, 360 - np.flipud(ZodiacalLight._llsun)[1:-1]))) * u.degree
         zl_scale = np.concatenate((np.flipud(zl_scale)[:-1],zl_scale))
         zl_scale = np.concatenate((zl_scale,np.fliplr(zl_scale)[:,1:-1]),axis=1)
 

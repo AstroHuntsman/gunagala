@@ -88,6 +88,17 @@ files.
 Contributing
 ============
 
+Please submit bug reports or feature requests in the form of GitHub Issues at
+https://github.com/AstroHuntsman/gunagala/issues. For code contributions please fork and clone the repository, create a
+feature branch and submit a Pull Request.  We recommend the
+`astropy Developer Documentation <http://docs.astropy.org/en/stable/development/workflow/development_workflow.html>`_
+for a description of suitable workflows.
+
+Changelog
+=========
+
+Coming soon...
+
 Reference/API
 =============
 
@@ -147,3 +158,5 @@ Reference/API
   :skip: Time
   :skip: get_pkg_data_filename
   :skip: ensure_unit
+
+.. automodapi:: gunagala.utils

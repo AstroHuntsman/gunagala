@@ -6,7 +6,25 @@ import astropy.units as u
 
 
 def ensure_unit(arg, unit):
-    """Ensures that the argument is using the required unit"""
+    """
+    Ensures that the argument has the requested units, performing
+    conversions as necessary.
+
+    Parameters
+    ----------
+    arg : astropy.units.Quantity or compatible
+        Argument to be coerced into the requested units. Can be an
+        `astropy.units.Quantity` instance or any numeric type or sequence
+        that is compatible with the `Quantity` constructor (e.g.
+        a `numpy.array`, `list` of `float`, etc.).
+    unit : astropy.units.Unit
+        Requested units.
+
+    Returns
+    -------
+    arg : astropy.units.Quantity
+        `arg` as an `astropy.units.Quantity` with units of `unit`.
+    """
     if not isinstance(arg, u.Quantity):
         arg = arg * unit
     return arg.to(unit)
