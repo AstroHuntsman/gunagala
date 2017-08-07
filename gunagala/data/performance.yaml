@@ -226,7 +226,7 @@ imagers:
             - Ha_5nm
         psf: 2as
         sky: SSO
-        num_imagers: 5
+        num_imagers: 10
         num_per_computer: 5
 
     ase_2016:
