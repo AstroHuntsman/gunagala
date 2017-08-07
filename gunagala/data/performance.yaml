@@ -206,10 +206,10 @@ skys:
     SSO:
         model: Simple
         surface_brightness:  # AB mag 'per square arcsecond'
-            g: 22.5
-            r: 21.5
-            Ha_3nm: 20.5
-            Ha_5nm: 20.5
+            g: 22.3
+            r: 21.4
+            Ha_3nm: 21.4
+            Ha_5nm: 21.4
 
     ZL:
         model: ZodiacalLight
