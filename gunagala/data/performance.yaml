@@ -203,20 +203,52 @@ psfs:
 
 
 skys:
-    SSO:
+    CTIO_0day: # From DECam ETC v7, 0 day Moon
         model: Simple
         surface_brightness:  # AB mag 'per square arcsecond'
-            g: 22.3
-            r: 21.4
-            Ha_3nm: 21.4
-            Ha_5nm: 21.4
+            g: 22.1
+            r: 21.1
+            Ha_3nm: 21.1
+            Ha_5nm: 21.1
+
+    CTIO_3day: # From DECam ETC v7, 3 day Moon
+        model: Simple
+        surface_brightness:  # AB mag 'per square arcsecond'
+            g: 21.8
+            r: 20.9
+            Ha_3nm: 20.9
+            Ha_5nm: 20.9
+
+    CTIO_7day: # From DECam ETC v7, 7 day Moon
+        model: Simple
+        surface_brightness:  # AB mag 'per square arcsecond'
+            g: 21.2
+            r: 20.6
+            Ha_3nm: 20.6
+            Ha_5nm: 20.6
+
+    CTIO_10day: # From DECam ETC v7, 10 day Moon
+        model: Simple
+        surface_brightness:  # AB mag 'per square arcsecond'
+            g: 20.4
+            r: 20.2
+            Ha_3nm: 20.2
+            Ha_5nm: 20.2
+
+    CTIO_14day: # From DECam ETC v7, 14 day Moon
+        model: Simple
+        surface_brightness:  # AB mag 'per square arcsecond'
+            g: 19.4
+            r: 19.7
+            Ha_3nm: 19.7
+            Ha_5nm: 19.7
 
     ZL:
         model: ZodiacalLight
 
 
 imagers:
-    canon_sbig:
+    canon_sbig_dark:
         optic: canon
         camera: sbig
         filters:
@@ -225,8 +257,21 @@ imagers:
             - Ha_3nm
             - Ha_5nm
         psf: 2as
-        sky: SSO
-        num_imagers: 10
+        sky: CTIO_0day
+        num_imagers: 5
+        num_per_computer: 5
+
+    canon_sbig_bright:
+        optic: canon
+        camera: sbig
+        filters:
+            - g
+            - r
+            - Ha_3nm
+            - Ha_5nm
+        psf: 2as
+        sky: CTIO_14day
+        num_imagers: 5
         num_per_computer: 5
 
     ase_2016:
