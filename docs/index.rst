@@ -102,9 +102,6 @@ Coming soon...
 Reference/API
 =============
 
-.. automodapi:: gunagala
-  :no-main-docstr:
-
 .. automodapi:: gunagala.imager
   :skip: ensure_unit
   :skip: load_config

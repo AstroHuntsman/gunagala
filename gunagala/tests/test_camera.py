@@ -22,6 +22,12 @@ def ccd():
 
 def test_camera(ccd):
     assert isinstance(ccd, Camera)
+
+
+def test_saturation_level(ccd):
     assert ccd.saturation_level == min(25500 * u.electron / u.pixel,
                                        (((2**16 - 1) - 1100) * 0.37 * u.electron / u.pixel))
+
+
+def test_max_noise(ccd):
     assert ccd.max_noise == (ccd.saturation_level * u.electron / u.pixel + (9.3 * u.electron / u.pixel)**2)**0.5

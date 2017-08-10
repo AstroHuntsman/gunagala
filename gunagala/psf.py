@@ -51,7 +51,11 @@ class PSF(Fittable2DModel):
 
     @FWHM.setter
     def FWHM(self, FWHM):
-        self._FWHM = ensure_unit(FWHM, u.arcsecond)
+        FWHM = ensure_unit(FWHM, u.arcsecond)
+        if FWHM <= 0 * u.arcsecond:
+            raise ValueError("FWHM should be > 0, got {}!".format(FWHM))
+        else:
+            self._FWHM = FWHM
         # If a pixel scale has already been set should update model parameters when FWHM changes.
         if self.pixel_scale:
             self._update_model()
@@ -74,7 +78,11 @@ class PSF(Fittable2DModel):
 
     @pixel_scale.setter
     def pixel_scale(self, pixel_scale):
-        self._pixel_scale = ensure_unit(pixel_scale, (u.arcsecond / u.pixel))
+        pixel_scale = ensure_unit(pixel_scale, (u.arcsecond / u.pixel))
+        if pixel_scale <= 0 * u.arcsecond / u.pixel:
+            raise ValueError("Pixel scale should be > 0, got {}!".format(pixel_scale))
+        else:
+            self._pixel_scale = pixel_scale
         # When pixel scale is set/changed need to update model parameters:
         self._update_model()
 
@@ -120,19 +128,34 @@ class PSF(Fittable2DModel):
         except AttributeError:
             return None
 
-    def pixellated(self, pixel_scale=None, size=21, offsets=(0.0, 0.0)):
+    def pixellated(self, size=21, offsets=(0.0, 0.0)):
         """
-        Calculates a pixellated version of the PSF for a given pixel
-        scale.
+        Calculates a pixellated version of the PSF.
+
+        The pixel values are calculated using 10x oversampling, i.e. by
+        evaluating the continuous PSF model at a 10 x 10 grid of positions
+        within each pixel and averaging the results.
 
         Parameters
         ----------
-        pixel_scale : astropy.units.Quantity, optional
         size : int, optional
+            Size of the pixellated PSF to calculate, the returned image
+            will have `size` x `size` pixels. Default value 21.
         offset : tuple of floats, optional
+            y and x axis offsets of the centre of the PSF from the centre
+            of the returned image, in pixels.
+
+        Returns
+        -------
+        pixellated : numpy.array
+            Pixellated PSF image with `size` by `size` pixels. The PSF
+            is normalised to an integral of 1 however the sum of the
+            pixellated PSF will be somewhat less due to truncation of the
+            PSF wings by the edge of the image.
         """
-        if not pixel_scale:
-            pixel_scale = self.pixel_scale
+        size = int(size)
+        if size <= 0:
+            raise ValueError("`size` must be > 0, got {}!".format(size))
 
         # Update PSF centre coordinates
         self.x_0 = offsets[0]
@@ -143,17 +166,17 @@ class PSF(Fittable2DModel):
 
         return discretize_model(self, xrange, yrange, mode='oversample', factor=10)
 
-    def _get_peak(self, pixel_scale=None):
+    def _get_peak(self):
         """
         Calculate the peak pixel value (as a fraction of total counts) for
         a PSF centred on a pixel. This is useful for calculating
         saturation limits for point sources.
         """
         # Odd number of pixels (1) so offsets = (0, 0) is centred on a pixel
-        centred_psf = self.pixellated(pixel_scale, 1, offsets=(0, 0))
+        centred_psf = self.pixellated(size=1, offsets=(0, 0))
         return centred_psf[0, 0] / u.pixel
 
-    def _get_n_pix(self, pixel_scale=None, size=20):
+    def _get_n_pix(self, size=20):
         """
         Calculate the effective number of pixels for PSF fitting
         photometry with this PSF, in the worse case where the PSF is
@@ -162,7 +185,7 @@ class PSF(Fittable2DModel):
         # Want a even number of pixels.
         size = size + size % 2
         # Even number of pixels so offsets = (0, 0) is centred on pixel corners
-        corner_psf = self.pixellated(pixel_scale, size, offsets=(0, 0))
+        corner_psf = self.pixellated(size, offsets=(0, 0))
         return 1 / ((corner_psf**2).sum()) * u.pixel
 
     def _update_model(self):
@@ -222,7 +245,7 @@ class Moffat_PSF(PSF, Moffat2D):
 
     @shape.setter
     def shape(self, alpha):
-        if shape <= 1.0:
+        if alpha <= 1.0:
             raise ValueError('shape must be greater than 1!')
 
         self.alpha = alpha

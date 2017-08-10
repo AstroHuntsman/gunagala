@@ -25,7 +25,7 @@ class Sky:
         pass
 
     def surface_brightness(*args, **kwargs):
-        raise NotImplementError
+        raise NotImplementedError
 
 
 class Simple(Sky):
