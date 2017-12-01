@@ -36,6 +36,7 @@ env:
         - EVENT_TYPE='pull_request push'
         - ASTROPY_USE_SYSTEM_PYTEST=1
 
+        
         # For this package-template, we include examples of Cython modules,
         # so Cython is required for testing. If your package does not include
         # Cython code, you can set CONDA_DEPENDENCIES=''
@@ -135,8 +136,8 @@ install:
     # in how to install a package, in which case you can have additional
     # commands in the install: section below.
 
-    - git clone git://github.com/astropy/ci-helpers.git
-    - source ci-helpers/travis/setup_conda_$TRAVIS_OS_NAME.sh
+    - git clone --depth 1 git://github.com/astropy/ci-helpers.git
+    - source ci-helpers/travis/setup_conda.sh
 
     # As described above, using ci-helpers, you should be able to set up an
     # environment with dependencies installed using conda and pip, but in some
@@ -151,7 +152,6 @@ script:
    - $MAIN_CMD $SETUP_CMD
 
 after_success:
-    # If coveralls.io is set up for this package, uncomment the line
-    # below and replace "packagename" with the name of your package.
+    # If coveralls.io is set up for this package, uncomment the line below.
     # The coveragerc file may be customized as needed for your package.
     - if [[ $SETUP_CMD == *coverage* ]]; then coveralls --rcfile='gunagala/tests/coveragerc'; fi
