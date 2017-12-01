@@ -40,7 +40,8 @@ docs/_build
 *.egg
 *.egg-info
 dist
-build
+build/lib.*
+build/bdist.*
 eggs
 parts
 bin

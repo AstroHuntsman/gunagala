@@ -36,7 +36,7 @@ env:
         - EVENT_TYPE='pull_request push'
         - ASTROPY_USE_SYSTEM_PYTEST=1
 
-        
+
         # For this package-template, we include examples of Cython modules,
         # so Cython is required for testing. If your package does not include
         # Cython code, you can set CONDA_DEPENDENCIES=''
@@ -56,7 +56,6 @@ env:
     matrix:
         # Make sure that egg_info works without dependencies
         #- PYTHON_VERSION=2.7 SETUP_CMD='egg_info'
-        #- PYTHON_VERSION=3.3 SETUP_CMD='egg_info'
         #- PYTHON_VERSION=3.4 SETUP_CMD='egg_info'
         #- PYTHON_VERSION=3.5 SETUP_CMD='egg_info'
         - PYTHON_VERSION=3.6 SETUP_CMD='egg_info'
@@ -100,13 +99,11 @@ matrix:
         #- os: linux
         #  env: PYTHON_VERSION=2.7 NUMPY_VERSION=1.7
         #- os: linux
-        #  env: PYTHON_VERSION=3.3 NUMPY_VERSION=1.8
-        #- os: linux
         #  env: PYTHON_VERSION=3.4 NUMPY_VERSION=1.9
         #- os: linux
         #  env: PYTHON_VERSION=3.5 NUMPY_VERSION=1.10
         #- os: linux
-        #  env: NUMPY_VERSION=1.11
+        #  env: NUMPY_VERSION=1.12
 
         # Try numpy pre-release
         #- os: linux
