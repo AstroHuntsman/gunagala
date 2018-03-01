@@ -1,7 +1,8 @@
 # Large data files
 HFI_CompMap_ThermalDustModel_2048_R1.20.fits
 
-.pytest_cache
+# Oddly this isn't in the template.
+.eggs
 
 # Compiled files
 *.py[cod]
@@ -42,8 +43,7 @@ docs/_build
 *.egg
 *.egg-info
 dist
-build/lib.*
-build/bdist.*
+build
 eggs
 parts
 bin
