@@ -21,7 +21,7 @@ programmatically in Python.
 
 Gunagala is the word for sky in Kamilaroi/Gamilaraay, the language of the Traditional Custodians of
 the land on which Siding Spring Observatory sits
-(ref: `www.dnathan.com <http://www.dnathan.com/language/gamilaraay/dictionary/GAM_G.HTM#gunagala>`_).
+(ref: `www.dnathan.com <http://www.dnathan.com/language/gamilaraay/dictionary/GAM_G.HTM#gunagala>`_ ).
 
 Installation
 ============
@@ -95,8 +95,8 @@ Contributing
 
 Please submit bug reports or feature requests in the form of GitHub Issues at
 https://github.com/AstroHuntsman/gunagala/issues. For code contributions please fork and clone the
-repository, create a feature branch and submit a Pull Request.  We recommend the `astropy Developer
-Documentation <http://docs.astropy.org/en/stable/development/workflow/development_workflow.html>`_
+repository, create a feature branch and submit a Pull Request.  We recommend the
+`astropy Developer Documentation <http://docs.astropy.org/en/stable/development/workflow/development_workflow.html>`_
 for a description of suitable workflows.
 
 Changelog
