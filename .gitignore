@@ -1,6 +1,8 @@
 # Large data files
 HFI_CompMap_ThermalDustModel_2048_R1.20.fits
 
+.pytest_cache
+
 # Compiled files
 *.py[cod]
 *.a
