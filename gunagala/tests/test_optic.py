@@ -1,7 +1,7 @@
 import pytest
 import astropy.units as u
 
-from ..optic import Optic
+from gunagala.optic import Optic
 
 
 @pytest.fixture(scope='module')

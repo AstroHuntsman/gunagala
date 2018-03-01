@@ -12,7 +12,7 @@ from astropy.coordinates import SkyCoord, GeocentricTrueEcliptic, get_sun, Angle
 from astropy.time import Time
 from astropy.utils.data import get_pkg_data_filename
 
-from .utils import ensure_unit
+from gunagala.utils import ensure_unit
 
 sun_location = 'ftp://ftp.stsci.edu/cdbs/grid/k93models/standards/sun_castelli.fits'
 

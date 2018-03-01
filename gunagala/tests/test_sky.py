@@ -4,7 +4,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
-from ..sky import Sky, Simple, ZodiacalLight
+from gunagala.sky import Sky, Simple, ZodiacalLight
 
 
 @pytest.fixture(scope='module')

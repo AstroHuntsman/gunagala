@@ -15,13 +15,13 @@ from astropy import units as u
 from astropy.table import Table
 from astropy.wcs import WCS
 
-from .optic import Optic
-from .optical_filter import Filter
-from .camera import Camera
-from .psf import PSF, Moffat_PSF
-from .sky import Sky, Simple, ZodiacalLight
-from .config import load_config
-from .utils import ensure_unit
+from gunagala.optic import Optic
+from gunagala.optical_filter import Filter
+from gunagala.camera import Camera
+from gunagala.psf import PSF, Moffat_PSF
+from gunagala.sky import Sky, Simple, ZodiacalLight
+from gunagala.config import load_config
+from gunagala.utils import ensure_unit
 
 def create_imagers(config=None):
     """
