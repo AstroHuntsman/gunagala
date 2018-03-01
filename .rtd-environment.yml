@@ -9,5 +9,6 @@ dependencies:
     - matplotlib
     - numpy
     - PyYAML
+    - future
 #   - pip:
 #       - dependency_from_pip
