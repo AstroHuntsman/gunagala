@@ -1,0 +1,13 @@
+name: gunagala
+
+channels:
+    - astropy
+
+dependencies:
+    - astropy
+    - scipy
+    - matplotlib
+    - numpy
+    - PyYAML
+#   - pip:
+#       - dependency_from_pip
