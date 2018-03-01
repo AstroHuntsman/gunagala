@@ -11,6 +11,7 @@ omit =
    {packagename}/*/tests/*
    {packagename}/*/*/tests/*
    {packagename}/version*
+   {pacakgename}/astroimsim*
 
 [report]
 exclude_lines =
