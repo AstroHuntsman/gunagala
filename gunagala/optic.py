@@ -90,5 +90,5 @@ class Optic:
         self.theta_range = u.Quantity((theta_min, theta_max)).to(u.degree)
 
         self.wavelengths, self.throughput = get_table_data(throughput, data_dir='data/performance_data',
-                                                           column_names = ['Wavelength', 'Throughput'],
-                                                           column_units = [u.nm, u.dimensionless_unscaled])
+                                                           column_names = ('Wavelength', 'Throughput'),
+                                                           column_units = (u.nm, u.dimensionless_unscaled))

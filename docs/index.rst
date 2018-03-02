@@ -139,13 +139,13 @@ Reference/API
   :skip: interp1d
   :skip: brentq
   :skip: ensure_unit
+  :skip: get_table_data
   :skip: minimize_scalar
   :skip: eval_chebyt
   :no-inheritance-diagram:
 
 .. automodapi:: gunagala.camera
   :skip: Table
-  :skip: get_pkg_data_filename
   :skip: ensure_unit
   :no-inheritance-diagram:
 
@@ -164,7 +164,6 @@ Reference/API
   :skip: get_sun
   :skip: Angle
   :skip: Time
-  :skip: get_pkg_data_filename
   :skip: ensure_unit
 
 .. automodapi:: gunagala.utils

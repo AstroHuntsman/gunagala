@@ -10,12 +10,8 @@ from scipy.special import eval_chebyt
 
 from astropy import units as u
 from astropy.table import Table
-from astropy.utils.data import get_pkg_data_filename
 
-from gunagala.utils import ensure_unit
-
-
-data_dir = 'data/performance_data'
+from gunagala.utils import ensure_unit, get_table_data
 
 
 class Filter:
@@ -28,12 +24,14 @@ class Filter:
 
     Parameters
     ----------
-    transmission_filename : str, optional
-        Name of file containing transmission as a function of wavelength
-        data. Must be in a format readable by `astropy.table.Table.read()`
-        and use column names `Wavelength` and `Transmission`. If the
-        data file does not provide units nm and dimensionless unscaled
-        will be assumed.
+    transmission : astropy.table.Table or str, optional
+        Filter transmission as a function of wavelength data, either as an
+        astropy.table.Table object or the name of a file that can be read
+        by `astropy.table.Table.read()`. The filename can be either the
+        path to a user file or the name of one of gunagala's included
+        files. The table must use column names `Wavelength` and
+        `Transmission`. If the table does not specify units then nm and
+        dimensionless unscaled are assumed.
     chebyshev_params : dict, optional
         Dictionary containing the parameters wave1, wave2, order, ripple
         and peak for the Chebyshev Type I parameterised filter model.
@@ -60,7 +58,7 @@ class Filter:
 
     """
     def __init__(self,
-                 transmission_filename=None,
+                 transmission=None,
                  chebyshev_params=None,
                  butterworth_params=None,
                  apply_aoi=False,
@@ -68,9 +66,9 @@ class Filter:
                  theta_range=None,
                 *kwargs):
 
-        n_args = np.count_nonzero((transmission_filename, chebyshev_params, butterworth_params))
+        n_args = np.count_nonzero((transmission, chebyshev_params, butterworth_params))
         if n_args != 1:
-            raise ValueError("One and only one of `tranmission_filename`, `chebyshev_params` & `butterworth_params`"
+            raise ValueError("One and only one of `tranmission`, `chebyshev_params` & `butterworth_params`"
                              + "must be specified, got {}!".format(n_args))
 
         self.apply_aoi = apply_aoi
@@ -80,16 +78,10 @@ class Filter:
         else:
             self._theta_range = None
 
-        if transmission_filename:
-            transmission_data = Table.read(get_pkg_data_filename(os.path.join(data_dir, transmission_filename)))
-
-            if not transmission_data['Wavelength'].unit:
-                transmission_data['Wavelength'].unit = u.nm
-            self.wavelengths = transmission_data['Wavelength'].quantity.to(u.nm)
-
-            if not transmission_data['Transmission'].unit:
-                transmission_data['Transmission'].unit = u.dimensionless_unscaled
-            self._transmission = transmission_data['Transmission'].quantity.to(u.dimensionless_unscaled)
+        if transmission:
+            self.wavelengths, self._transmission = get_table_data(transmission, data_dir='data/performance_data',
+                                                                  column_names=('Wavelength', 'Transmission'),
+                                                                  column_units=(u.nm, u.dimensionless_unscaled))
 
             # Create linear interpolator for calculating transmission at arbitrary wavelength
             self._interpolator = interp1d(self.wavelengths, self._transmission, kind='linear', fill_value='extrapolate')

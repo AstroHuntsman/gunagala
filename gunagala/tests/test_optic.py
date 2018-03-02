@@ -62,3 +62,34 @@ def test_file_throughput(tmpdir):
     assert isinstance(telescope, Optic)
     assert (telescope.wavelengths == ws).all()
     assert (telescope.throughput == tps).all()
+
+
+def test_bad_throughput():
+    with pytest.raises(IOError):
+        telescope = Optic(aperture=279 * u.mm,
+                          focal_length=620 * u.mm,
+                          central_obstruction=129 * u.mm,
+                          throughput='notavalidthroughputfile')
+
+
+def test_bad_columns():
+    with pytest.raises(ValueError):
+        ws = [800, 1800] * u.nm
+        tps = [0.6, 0.6] * u.dimensionless_unscaled
+        throughput = Table(data = [ws, tps], names=['Banana', 'Cucumber'])
+        telescope = Optic(aperture=279 * u.mm,
+                          focal_length=620 * u.mm,
+                          central_obstruction=129 * u.mm,
+                          throughput=throughput)
+
+
+def test_bad_units():
+    with pytest.raises(u.UnitConversionError):
+        ws = [800, 1800] * u.imperial.furlong
+        tps = [0.6, 0.6] * u.fortnight
+        # Furlong is actually a valid unit here, but fortnight isn't
+        throughput = Table(data = [ws, tps], names=['Wavelength', 'Throughput'])
+        telescope = Optic(aperture=279 * u.mm,
+                          focal_length=620 * u.mm,
+                          central_obstruction=129 * u.mm,
+                          throughput=throughput)

@@ -31,7 +31,7 @@ cameras:
         resolution: 3326, 2504 # pixel
         read_noise: 9.3  # electron / pixel
         dark_current: 0.04 # electron / (second * pixel)
-        QE_filename: ML8300M_QE.csv
+        QE: ML8300M_QE.csv
         minimum_exposure: 0.1 # second
 
     fli: # ML50100
@@ -44,7 +44,7 @@ cameras:
         resolution: 8176, 6132 # pixel
         read_noise: 12  # electron / pixel
         dark_current: 0.015 # electron / (second * pixel)
-        QE_filename: ML50100_QE.csv
+        QE: ML50100_QE.csv
         minimum_exposure: 3 # second (~0.1 s physically possible, but won't be flat due to iris shutter)
 
     zwo: # ASI1600MM - Note: gain is variable & changes effective read noise, dynamic range. These are near max values.
@@ -57,7 +57,7 @@ cameras:
         resolution: 4656, 3520 # pixel
         read_noise: 2.5 # electron / pixel
         dark_current: 0.008 # electron / (second * pixel)
-        QE_filename: ZWO_QE.csv
+        QE: ZWO_QE.csv
         minimum_exposure: 0.000032 # second
 
     cis115: # e2v CIS115 'Sirius' back side illuminated CMOS image sensor
@@ -70,27 +70,27 @@ cameras:
         resolution: 2000, 1504 # pixel
         read_noise: 4.0 # electron / pixel. CDS, from Wang et al 2014.
         dark_current: 0.04 # electron / pixel / s. Extrapolation to -40C from Wang et al 2014 model.
-        QE_filename: cis115_QE_-40C.csv # From Soman et al 2014
+        QE: cis115_QE_-40C.csv # From Soman et al 2014
         minimum_exposure: 0.1333 # second. Continuous 'rolling shutter' mode for full drame. ROI could be quicker.
 
 filters:
     g:
-        transmission_filename: astrodon_g.csv
+        transmission: astrodon_g.csv
         apply_aoi: True
         n_eff: 1.75
 
     r:
-        transmission_filename: astrodon_r.csv
+        transmission: astrodon_r.csv
         apply_aoi: True
         n_eff: 1.75
 
     Ha_3nm:
-        transmission_filename: astrodon_ha_3nm.csv
+        transmission: astrodon_ha_3nm.csv
         apply_aoi: True
         n_eff: 1.75
 
     Ha_5nm:
-        transmission_filename: astrodon_ha_5nm.csv
+        transmission: astrodon_ha_5nm.csv
         apply_aoi: True
         n_eff: 1.75
 

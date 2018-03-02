@@ -16,7 +16,7 @@ def ccd():
                  read_noise=9.3 * u.electron / u.pixel,
                  dark_current=0.04 * u.electron / (u.pixel * u.second),
                  minimum_exposure=0.1 * u.second,
-                 QE_filename='ML8300M_QE.csv')
+                 QE='ML8300M_QE.csv')
     return ccd
 
 
