@@ -2,7 +2,10 @@
 
 # This sub-module is destined for common non-package specific utility
 # functions that will ultimately be merged into `astropy.utils`
+import os
 import astropy.units as u
+from astropy.table import Table
+from astropy.utils.data import get_pkg_data_filename
 
 
 def ensure_unit(arg, unit):
@@ -28,3 +31,31 @@ def ensure_unit(arg, unit):
     if not isinstance(arg, u.Quantity):
         arg = arg * unit
     return arg.to(unit)
+
+
+def get_table_data(data_table, data_dir, column_names, column_units):
+    if not isinstance(data_table, Table):
+        # data_table isn't a Table, assume it's a filename.
+        if not os.path.exists(data_table):
+            # Not a (valid) path to a user file, look in package data directories
+            try:
+                data_table = get_pkg_data_filename(os.path.join(data_dir, data_table),
+                                                   package='gunagala')
+            except:
+                # Not in package data directories either
+                raise IOError("Couldn't find data table {}!".format(data_table))
+        data_table = Table.read(data_table)
+
+    data = []
+    for name, unit in zip(column_names, column_units):
+        try:
+            column = data_table[name]
+        except KeyError:
+            raise ValueError("Data table has no column named {}!".format(name))
+        if not column.unit:
+            column.unit = unit
+            data.append(column.quantity)
+        else:
+            data.append(column.quantity.to(unit))
+
+    return data

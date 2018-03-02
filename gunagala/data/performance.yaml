@@ -2,23 +2,23 @@ optics:
     canon: # Canon 2.8/400 lens
         aperture: 139.642857143 # millimetres
         focal_length: 391.0 # millimetres
-        throughput_filename: canon_throughput.csv
+        throughput: canon_throughput.csv
 
     rasa: #Celestron RASA
         aperture: 279.0 # millimetres
         focal_length: 620.0 # millimetres
-        throughput_filename: rasa_tau.csv
+        throughput: rasa_tau.csv
         central_obstruction: 129.0 # millimetres
 
     ase90: # Australian Space Eye nominal 90 mm diameter telescope
         aperture: 90.0 # millimtres
         focal_length: 481.0 # millimetres
-        throughput_filename: ase90_throughput.csv # Simplistic model - 7 surfaces at 99.5%
+        throughput: ase90_throughput.csv # Simplistic model - 7 surfaces at 99.5%
 
     ase160: # Australian Space Eye nominal 160 mm diameter telescope
         aperture: 160 # millimetres
         focal_length: 481.0 # millimetres
-        throughput_filename: ase160_throughput.csv # Simplistic model - 7 surfaces at 99.5%
+        throughput: ase160_throughput.csv # Simplistic model - 7 surfaces at 99.5%
 
 cameras:
     sbig: # STF-8300M

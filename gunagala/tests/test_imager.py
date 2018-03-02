@@ -17,7 +17,7 @@ from gunagala.imager import create_imagers
 def lens():
     lens = Optic(aperture=14 * u.cm,
                  focal_length=0.391 * u.m,
-                 throughput_filename='canon_throughput.csv')
+                 throughput='canon_throughput.csv')
     return lens
 
 

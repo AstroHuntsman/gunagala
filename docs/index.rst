@@ -22,7 +22,7 @@ programmatically in Python.
 Gunagala is named as a gesture of respect to the traditional custodians of the land on which Siding
 Spring Observatory sits, the Kamilaroi people of northern New South Wales. Gunagala is 'sky' in
 the Kamilaroi/Gamilaraay language
-(ref: `www.dnathan.com <http://www.dnathan.com/language/gamilaraay/dictionary/>`_ ). Aboriginal
+(ref: `www.dnathan.com <http://www.dnathan.com/language/gamilaraay/dictionary/>`_). Aboriginal
 Australians have studied the night skies above Australia for at least 50000 years. To learn more
 about Aboriginal astronomy please visit http://www.aboriginalastronomy.com.au/.
 
@@ -139,7 +139,6 @@ Reference/API
   :skip: interp1d
   :skip: brentq
   :skip: ensure_unit
-  :skip: get_pkg_data_filename
   :skip: minimize_scalar
   :skip: eval_chebyt
   :no-inheritance-diagram:
@@ -169,3 +168,4 @@ Reference/API
   :skip: ensure_unit
 
 .. automodapi:: gunagala.utils
+  :skip: get_pkg_data_filename

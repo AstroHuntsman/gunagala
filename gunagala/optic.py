@@ -7,12 +7,8 @@ import numpy as np
 
 from astropy import units as u
 from astropy.table import Table
-from astropy.utils.data import get_pkg_data_filename
 
-from gunagala.utils import ensure_unit
-
-
-data_dir = 'data/performance_data'
+from gunagala.utils import ensure_unit, get_table_data
 
 
 class Optic:
@@ -32,11 +28,13 @@ class Optic:
         diameter).
     focal_length : astropy.units.Quantity
         Effective focal length of the optical system as a whole.
-    throughput_filename : str
-        Name of a file containing optical throughput as a function of
-        wavelength data. Must be in a format readable by
-        `astropy.table.Table.read()` and use column names `Wavelength` and
-        `Throughput`. If the data file does not provide units nm and
+    throughput : astropy.table.Table or str
+        Optical throughput as a function of wavelength data, either as an
+        astropy.table.Table object or the name of a file that can be read
+        by `astropy.table.Table.read()`. The filename can be either the
+        path to a user file or the name of one of gunagala's included
+        files. The table must use column names `Wavelength` and
+        `Throughput`. If the table does not specify units then nm and
         dimensionless unscaled are assumed.
     central_obstruction : astropy.units.Quantity, optional
         Diameter of the central obstruction of the entrance pupil, if any.
@@ -70,7 +68,7 @@ class Optic:
         Sequence of throughput values from the tabulated throughput data,
         loaded from `throughout_filename`.
     """
-    def __init__(self, aperture, focal_length, throughput_filename, central_obstruction=0 * u.mm):
+    def __init__(self, aperture, focal_length, throughput, central_obstruction=0 * u.mm):
 
         self.aperture = ensure_unit(aperture, u.mm)
         self.central_obstruction = ensure_unit(central_obstruction, u.mm)
@@ -91,12 +89,6 @@ class Optic:
 
         self.theta_range = u.Quantity((theta_min, theta_max)).to(u.degree)
 
-        tau_data = Table.read(get_pkg_data_filename(os.path.join(data_dir, throughput_filename)))
-
-        if not tau_data['Wavelength'].unit:
-            tau_data['Wavelength'].unit = u.nm
-        self.wavelengths = tau_data['Wavelength'].quantity.to(u.nm)
-
-        if not tau_data['Throughput'].unit:
-            tau_data['Throughput'].unit = u.dimensionless_unscaled
-        self.throughput = tau_data['Throughput'].quantity.to(u.dimensionless_unscaled)
+        self.wavelengths, self.throughput = get_table_data(throughput, data_dir='data/performance_data',
+                                                           column_names = ['Wavelength', 'Throughput'],
+                                                           column_units = [u.nm, u.dimensionless_unscaled])
