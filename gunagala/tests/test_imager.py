@@ -17,7 +17,7 @@ from gunagala.imager import create_imagers
 def lens():
     lens = Optic(aperture=14 * u.cm,
                  focal_length=0.391 * u.m,
-                 throughput_filename='canon_throughput.csv')
+                 throughput='canon_throughput.csv')
     return lens
 
 
@@ -33,13 +33,13 @@ def ccd():
                  read_noise=9.3 * u.electron / u.pixel,
                  dark_current=0.04 * u.electron / (u.pixel * u.second),
                  minimum_exposure=0.1 * u.second,
-                 QE_filename='ML8300M_QE.csv')
+                 QE='ML8300M_QE.csv')
     return ccd
 
 
 @pytest.fixture(scope='module')
 def filters():
-    g = Filter(transmission_filename='astrodon_g.csv')
+    g = Filter(transmission='astrodon_g.csv')
     r = Filter(chebyshev_params={'wave1': 550 * u.nm,
                                  'wave2': 700 * u.nm,
                                  'order': 50,

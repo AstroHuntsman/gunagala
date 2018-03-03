@@ -8,7 +8,7 @@ from gunagala.optical_filter import Filter
 @pytest.fixture(scope='module', params=('table', 'chebyshev', 'butterworth'))
 def optical_filter(request):
     if request.param == 'table':
-        bandpass = Filter(transmission_filename='astrodon_g.csv')
+        bandpass = Filter(transmission='astrodon_g.csv')
     elif request.param == 'chebyshev':
         bandpass = Filter(chebyshev_params={'wave1': 0.700 * u.micron,
                                             'wave2': 855.5,
@@ -74,7 +74,7 @@ def test_aoi():
 
 def test_bad():
     with pytest.raises(ValueError):
-        Filter(transmission_filename='astrodon_g.csv',
+        Filter(transmission='astrodon_g.csv',
                chebyshev_params={'wave1': 0.700 * u.micron,
                                  'wave2': 855.5,
                                  'order': 50,

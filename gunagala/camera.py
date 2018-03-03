@@ -5,12 +5,8 @@ import os
 
 from astropy import units as u
 from astropy.table import Table
-from astropy.utils.data import get_pkg_data_filename
 
-from gunagala.utils import ensure_unit
-
-
-data_dir = 'data/performance_data'
+from gunagala.utils import ensure_unit, get_table_data
 
 
 class Camera:
@@ -48,12 +44,14 @@ class Camera:
     dark_current : astropy.units.Quantity
         Rate of accumlation of dark signal, in electrons/second/pixel
         units.
-    QE_filename : str
-        Name of a file containing quantum efficieny as a function of
-        wavelength data. Must be in a format readable by
-        `astropy.table.Table.read()` and use column names `Wavelength`
-        and `QE`. If the data file does not provide units nm and
-        dimensionless unscaled will be assumed.
+    QE : astropy.table.Table or str
+        Quantum efficiency as a function of wavelength data, either as an
+        astropy.table.Table object or the name of a file that can be read
+        by `astropy.table.Table.read()`. The filename can be either the
+        path to a user file or the name of one of gunagala's included
+        files. The table must use column names `QE` andv`Throughput`. If
+        the table does not specify units then nm and electron / photon
+        are assumed.
     minimum_exposure : astropy.units.Quantity
         Length of the shortest exposure that the camera is able to
         take.
@@ -89,8 +87,8 @@ class Camera:
     QE : astropy.units.Quantity
         Sequence of quantum efficiency values from the QE data.
     """
-    def __init__(self, bit_depth, full_well, gain, bias, readout_time, pixel_size, resolution, read_noise,
-                 dark_current, QE_filename, minimum_exposure):
+    def __init__(self, bit_depth, full_well, gain, bias, readout_time, pixel_size, resolution,
+                 read_noise, dark_current, QE, minimum_exposure):
 
         self.bit_depth = int(bit_depth)
         self.full_well = ensure_unit(full_well, u.electron / u.pixel)
@@ -103,19 +101,14 @@ class Camera:
         self.dark_current = ensure_unit(dark_current, u.electron / (u.second * u.pixel))
         self.minimum_exposure = ensure_unit(minimum_exposure, u.second)
 
-        # Calculate a saturation level corresponding to the lower of the 'analogue' (full well) and 'digital'
-        # (ADC) limit, in electrons.
-        self.saturation_level = min(self.full_well, ((2**self.bit_depth - 1) * u.adu / u.pixel - self.bias) * self.gain)
+        # Calculate a saturation level corresponding to the lower of the 'analogue' (full well)
+        # and 'digital' (ADC) limit, in electrons.
+        self.saturation_level = min(self.full_well,
+                                    ((2**self.bit_depth - 1) * u.adu / u.pixel - self.bias) * self.gain)
 
         # Calculate the noise at the saturation level
         self.max_noise = (self.saturation_level * u.electron / u.pixel + self.read_noise**2)**0.5
 
-        QE_data = Table.read(get_pkg_data_filename(os.path.join(data_dir, QE_filename)))
-
-        if not QE_data['Wavelength'].unit:
-            QE_data['Wavelength'].unit = u.nm
-        self.wavelengths = QE_data['Wavelength'].quantity.to(u.nm)
-
-        if not QE_data['QE'].unit:
-            QE_data['QE'].unit = u.electron / u.photon
-        self.QE = QE_data['QE'].quantity.to(u.electron / u.photon)
+        self.wavelengths, self.QE = get_table_data(QE, data_dir='data/performance_data',
+                                                   column_names=('Wavelength', 'QE'),
+                                                   column_units=(u.nm, u.electron / u.photon))

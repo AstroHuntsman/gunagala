@@ -9,9 +9,12 @@ This is a Python package for modelling the performance of astronomical instrumen
 SNR/ETC/sensitivity limit calculations and generation of simulated data. The documentation is at
 `gunagala.readthedocs.io <https://gunagala.readthedocs.io/en/latest/>`_
 
-Gunagala is the word for sky in Kamilaroi/Gamilaraay, the language of the Traditional Custodians of
-the land on which Siding Spring Observatory sits
-(ref: `www.dnathan.com <https://www.dnathan.com/language/gamilaraay/dictionary/GAM_G.HTM#gunagala>`_).
+Gunagala is named as a gesture of respect to the traditional custodians of the land on which Siding
+Spring Observatory sits, the Kamilaroi people of northern New South Wales. Gunagala is 'sky' in
+the Kamilaroi/Gamilaraay language
+(ref: `www.dnathan.com <http://www.dnathan.com/language/gamilaraay/dictionary/>`_ ). Aboriginal
+Australians have studied the night skies above Australia for at least 50000 years. To learn more
+about Aboriginal astronomy please visit http://www.aboriginalastronomy.com.au/.
 
 .. image:: https://travis-ci.org/AstroHuntsman/gunagala.svg
     :target: https://travis-ci.org/AstroHuntsman/gunagala
