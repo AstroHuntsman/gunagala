@@ -28,9 +28,16 @@ def ensure_unit(arg, unit):
     arg : astropy.units.Quantity
         `arg` as an `astropy.units.Quantity` with units of `unit`.
     """
-    if not isinstance(arg, u.Quantity):
+    try:
+        arg = arg.to(unit)
+    except u.UnitConversionError as err:
+        # arg is a Quantity or compatible class, but the units are incompatible.
+        raise err
+    except:
+        # Some other exception means arg isn't a Quantity or compatible. Try converting it.
         arg = arg * unit
-    return arg.to(unit)
+
+    return arg
 
 
 def get_table_data(data_table, data_dir, column_names, column_units):
