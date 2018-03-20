@@ -117,7 +117,7 @@ def array_sequence_equal(array_sequence, reference=None):
     n_arrays = len(array_sequence)
     if n_arrays == 0:
         raise ValueError('array_sequence must contain at least one array object!')
-    elif n_arrays = 1:
+    elif n_arrays == 1:
         if reference is None:
             return True
         else:
