@@ -132,6 +132,9 @@ Reference/API
 
 .. automodapi:: gunagala.optic
   :skip: Table
+  :skip: ensure_unit
+  :skip: get_table_data
+  :skip: array_sequence_equal
   :no-inheritance-diagram:
 
 .. automodapi:: gunagala.optical_filter
