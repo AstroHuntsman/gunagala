@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 import astropy.units as u
 from astropy.table import Column
 
@@ -33,3 +34,43 @@ def test_ensure_unit_non_numeric():
     with pytest.raises(ValueError):
         s = "fortytwo"
         result = utils.ensure_unit(s, u.m)
+
+
+def test_array_empty():
+    with pytest.raises(ValueError):
+        utils.array_sequence_equal([])
+
+
+def test_array_single():
+    assert utils.array_sequence_equal([(1.2, 1.3) * u.m]) is True
+
+
+def test_array_twice():
+    assert utils.array_sequence_equal(((1.2, 1.4) * u.m, (1.2, 1.4) * u.m)) is True
+
+
+def test_array_different():
+    assert utils.array_sequence_equal([(1.2, 1.4) * u.m, (1.2, 1.3) * u.m]) is False
+
+
+def test_array_length():
+    assert utils.array_sequence_equal([(1.2, 1.4) * u.m, (1.2, 1.4, 1.3) * u.m]) is False
+
+
+def test_array_units():
+    assert utils.array_sequence_equal(((1.2, 1.4) * u.m, (1.2, 1.4) * u.imperial.furlong)) is False
+
+
+def test_array_type():
+    assert utils.array_sequence_equal(((1.2, 1.4) * u.m, np.array((1.2, 1.4)))) is False
+
+
+def test_array_reference():
+    assert utils.array_sequence_equal(((1.2, 1.4) * u.m, (1.2, 1.4) * u.m),
+                                      reference=(1.2, 1.4) * u.m) is True
+    assert utils.array_sequence_equal(((1.2, 1.4) * u.m, (1.2, 1.3) * u.m),
+                                      reference=(1.2, 1.4) * u.m) is False
+    assert utils.array_sequence_equal(((1.2, 1.4) * u.m, (1.2, 1.4) * u.m),
+                                      reference=(1.2, 1.3) * u.m) is False
+    assert utils.array_sequence_equal(((1.2, 1.4) * u.m, (1.2, 1.4) * u.m),
+                                      reference=(1.2, 1.4, 1.3) * u.m) is False
