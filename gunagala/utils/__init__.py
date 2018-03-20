@@ -114,8 +114,14 @@ def array_sequence_equal(array_sequence, reference=None):
         True if all arrays in the sequence are equal (or equal to reference, if given), otherwise
         False.
     """
-    if len(array_sequence) < 2:
-        return True
+    n_arrays = len(array_sequence)
+    if n_arrays == 0:
+        raise ValueError('array_sequence must contain at least one array object!')
+    elif n_arrays = 1:
+        if reference is None:
+            return True
+        else:
+            return (array_list[0] == reference).all()
     else:
         if reference is None:
             reference = array_sequence[0]
