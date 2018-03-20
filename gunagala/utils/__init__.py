@@ -102,11 +102,11 @@ def array_sequence_equal(array_sequence, reference=None):
     Parameters
     ----------
     array_sequence: sequence of numpy.array
-        Sequence of numpy.array or compatible type (e.g. astropy.unit.Quantity) objects to compare.
+        Sequence of numpy.array or compatible type (e.g. astropy.units.Quantity) objects to compare.
         The objects must support element-wise comparision and implement an any() method.
     reference: numpy.array, optional
         If given all arrays in the sequence will be compared with reference, otherwise they will
-        be compared with each other.
+        be compared with each other. Must be a numpy.array or compatible type (e.g. Quantity).
 
     Returns
     -------
