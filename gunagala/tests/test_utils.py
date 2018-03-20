@@ -41,12 +41,16 @@ def test_array_empty():
         utils.array_sequence_equal([])
 
 
-def test_array_single():
+def test_array_one_two():
     assert utils.array_sequence_equal([(1.2, 1.3) * u.m]) is True
 
 
-def test_array_twice():
+def test_array_two_two():
     assert utils.array_sequence_equal(((1.2, 1.4) * u.m, (1.2, 1.4) * u.m)) is True
+
+
+def test_array_two_one():
+    assert utils.array_sequence_equal(((1.2) * u.m, (1.2) * u.m)) is True
 
 
 def test_array_different():
