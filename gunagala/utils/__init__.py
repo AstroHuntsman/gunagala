@@ -120,9 +120,8 @@ def array_sequence_equal(array_sequence, reference=None):
         if reference is None:
             reference = array_sequence[0]
         for array in array_sequence:
-            comparison = (array == reference)
             try:
-                assert comparison.all()
+                assert (array == reference).all()
             except (AttributeError, AssertionError):
                 # Attribute error if array & reference different lengths, Assertion Error if same
                 # length but one or more elements differ in value.
