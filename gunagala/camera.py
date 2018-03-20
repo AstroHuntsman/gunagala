@@ -109,6 +109,6 @@ class Camera:
         # Calculate the noise at the saturation level
         self.max_noise = (self.saturation_level * u.electron / u.pixel + self.read_noise**2)**0.5
 
-        self.wavelengths, self.QE = get_table_data(QE, data_dir='data/performance_data',
+        self.wavelengths, self.QE = get_table_data(QE,
                                                    column_names=('Wavelength', 'QE'),
                                                    column_units=(u.nm, u.electron / u.photon))

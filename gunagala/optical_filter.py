@@ -79,7 +79,7 @@ class Filter:
             self._theta_range = None
 
         if transmission:
-            self.wavelengths, self._transmission = get_table_data(transmission, data_dir='data/performance_data',
+            self.wavelengths, self._transmission = get_table_data(transmission,
                                                                   column_names=('Wavelength', 'Transmission'),
                                                                   column_units=(u.nm, u.dimensionless_unscaled))
 

@@ -2,7 +2,7 @@ import pytest
 import astropy.units as u
 from astropy.table import Table
 
-from gunagala.optic import Optic
+from gunagala.optic import Optic, list_surfaces, make_throughput
 
 
 @pytest.fixture(scope='module')
@@ -93,3 +93,41 @@ def test_bad_units():
                           focal_length=620 * u.mm,
                           central_obstruction=129 * u.mm,
                           throughput=throughput)
+
+
+def test_list_surfaces():
+    surfaces = list_surfaces()
+    assert len(surfaces) > 0
+    assert isinstance(surfaces[0], str)
+
+
+def test_throughput_one_one():
+    surfaces = list_surfaces()
+    throughput = make_throughput([('aluminium_12deg_protected', 1)])
+    assert isinstance(throughput, Table)
+
+
+def test_throughput_two_one():
+    surfaces = list_surfaces()
+    throughput = make_throughput([('aluminium_12deg_protected', 1),
+                                  ('gold_12deg_protected', 1)])
+    assert isinstance(throughput, Table)
+
+
+def test_throughput_one_two():
+    surfaces = list_surfaces()
+    throughput = make_throughput([('silver_12deg_protected', 2)])
+    assert isinstance(throughput, Table)
+
+
+def test_throughput_bad_surface():
+    with pytest.raises(AssertionError):
+        throughput = make_throughput([('volume', 1)])
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_throughput_different_wavelengths():
+    surfaces = list_surfaces()
+    throughput = make_throughput([('aluminium_12deg_protected', 1),
+                                  ('aluminium_45deg_protected', 1)])
+    assert isinstance(throughput, Table)
