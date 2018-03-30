@@ -7,7 +7,7 @@ Gunagala
 
 This is a Python package for modelling the performance of astronomical instruments, including
 SNR/ETC/sensitivity limit calculations and generation of simulated data. The documentation is at
-`gunagala.readthedocs.io <https://gunagala.readthedocs.io/en/latest/>`_
+`gunagala.readthedocs.io <https://gunagala.readthedocs.io/>`_
 
 Gunagala is named as a gesture of respect to the traditional custodians of the land on which Siding
 Spring Observatory sits, the Kamilaroi people of northern New South Wales. Gunagala is 'sky' in
