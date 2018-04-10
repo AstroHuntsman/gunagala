@@ -18,7 +18,7 @@ from astropy.wcs import WCS
 from gunagala.optic import Optic
 from gunagala.optical_filter import Filter
 from gunagala.camera import Camera
-from gunagala.psf import PSF, Moffat_PSF
+from gunagala.psf import PSF, MoffatPSF
 from gunagala.sky import Sky, Simple, ZodiacalLight
 from gunagala.config import load_config
 from gunagala.utils import ensure_unit

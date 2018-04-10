@@ -2,12 +2,12 @@ import pytest
 import numpy as np
 import astropy.units as u
 
-from gunagala.psf import PSF, Moffat_PSF
+from gunagala.psf import PSF, MoffatPSF
 
 
 @pytest.fixture(scope='module')
 def psf():
-    psf = Moffat_PSF(FWHM=1 / 30 * u.arcminute, shape=4.7)
+    psf = MoffatPSF(FWHM=1 / 30 * u.arcminute, shape=4.7)
     return psf
 
 
@@ -18,7 +18,7 @@ def test_base():
 
 
 def test_moffat(psf):
-    assert isinstance(psf, Moffat_PSF)
+    assert isinstance(psf, MoffatPSF)
     assert isinstance(psf, PSF)
 
 

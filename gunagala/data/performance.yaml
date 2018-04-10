@@ -197,7 +197,7 @@ filters:
 
 psfs:
     2as:
-        model: Moffat_PSF
+        model: MoffatPSF
         FWHM: 2 # arcsecond
         shape: 4.5
 
