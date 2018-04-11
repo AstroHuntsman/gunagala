@@ -1,14 +1,17 @@
 """
 Point spread functions
 """
+import math
+
 import numpy as np
+from scipy import ndimage
 
 from astropy import units as u
 from astropy.convolution import discretize_model
 from astropy.modeling import Fittable2DModel
 from astropy.modeling.functional_models import Moffat2D
 
-from gunagala.utils import ensure_unit
+from gunagala import utils
 
 
 class PSF():
@@ -37,7 +40,7 @@ class PSF():
 
     @pixel_scale.setter
     def pixel_scale(self, pixel_scale):
-        pixel_scale = ensure_unit(pixel_scale, (u.arcsecond / u.pixel))
+        pixel_scale = utils.ensure_unit(pixel_scale, (u.arcsecond / u.pixel))
         if pixel_scale <= 0 * u.arcsecond / u.pixel:
             raise ValueError("Pixel scale should be > 0, got {}!".format(pixel_scale))
         else:
@@ -133,7 +136,7 @@ class FittablePSF(PSF, Fittable2DModel):
         can be used.
     """
     def __init__(self, FWHM, pixel_scale=None, **kwargs):
-        self._FWHM = ensure_unit(FWHM, u.arcsecond)
+        self._FWHM = utils.ensure_unit(FWHM, u.arcsecond)
 
         if pixel_scale is not None:
             self.pixel_scale = pixel_scale
@@ -154,7 +157,7 @@ class FittablePSF(PSF, Fittable2DModel):
 
     @FWHM.setter
     def FWHM(self, FWHM):
-        FWHM = ensure_unit(FWHM, u.arcsecond)
+        FWHM = utils.ensure_unit(FWHM, u.arcsecond)
         if FWHM <= 0 * u.arcsecond:
             raise ValueError("FWHM should be > 0, got {}!".format(FWHM))
         else:
@@ -295,8 +298,8 @@ class PixellatedPSF(PSF):
     psf_sampling: astropy.units.Quantity
         Pixel scale (angle/pixel) of psf_data.
     psf_centre: (float, float), optional
-        Pixel coordinates of the PSF centre within psf_data (zero based). If not
-        given psf_data.shape / 2 will be assumed.
+        Pixel coordinates of the PSF centre within psf_data (zero based, (y, x)).
+        If not given psf_data.shape / 2 will be assumed.
     oversampling : integer, optional
         Oversampling factor used when shifting & resampling the PSF, default 10.
     pixel_scale : astropy.units.Quantity, optional
@@ -304,6 +307,10 @@ class PixellatedPSF(PSF):
         spread functions or related parameters. Does not need to be set on
         object creation but must be set before before pixellation function
         can be used.
+    renormalise: bool, optional
+        Whether to renormalise the PSF to a total of 1 during initialisation,
+        default True. Only set to False if the psf_data is already correctly
+        normalised.
     """
     def __init__(self,
                  psf_data,
@@ -311,16 +318,23 @@ class PixellatedPSF(PSF):
                  psf_centre=None,
                  oversampling=10,
                  pixel_scale=None,
+                 renormalise=True,
                  **kwargs):
-        self._psf_data = psf_data
-        self._psf_sampling = ensure_unit(psd_sampling, u.arsecond / u.pixel)
+        if renormalise:
+            self._psf_data = psf_data / psf_data.sum()
+        else:
+            self._psf_data = psf_data
+        self._psf_sampling = utils.ensure_unit(psf_sampling, u.arcsecond / u.pixel)
         if psf_centre is None:
             self._psf_centre = np.array(psf_data.shape) / 2
         else:
-            self._psf_centre = psf_centre
+            self._psf_centre = np.array(psf_centre)
         self._oversampling = int(oversampling)
+
         if pixel_scale is not None:
+            # This will also call _update_model()
             self.pixel_scale = pixel_scale
+
 
     def pixellated(self, size=21, offsets=(0.0, 0.0)):
         """
@@ -334,7 +348,7 @@ class PixellatedPSF(PSF):
         size : int, optional
             Size of the pixellated PSF to calculate, the returned image
             will have `size` x `size` pixels. Default value 21.
-        offset : tuple of floats, optional
+        offsets : tuple of floats, optional
             y and x axis offsets of the centre of the PSF from the centre
             of the returned image, in pixels.
 
@@ -346,14 +360,32 @@ class PixellatedPSF(PSF):
             pixellated PSF will be somewhat less due to truncation of the
             PSF wings by the edge of the image.
         """
-        pass
+        resampled_size = size * self._oversampling
+        # Arrays of pixel coordinates relative to array centre
+        resampled_coordinates = np.mgrid[-(resampled_size - 1) / 2:resampled_size / 2,
+                                         -(resampled_size - 1) / 2:resampled_size / 2]
+        # Apply offsets so origin is at desired PSF centre
+        resampled_offsets = np.reshape(np.array(offsets) * self._oversampling, (2, 1, 1))
+        resampled_coordinates = resampled_coordinates - resampled_offsets
+        # Convert from resampled PSF pixel units to original PSF pixel units
+        resampled_coordinates = resampled_coordinates / self._resampling_factor
+        # Add position of PSF centre in psf_data so origin is the same as the origin of psf_data
+        resampled_coordinates = resampled_coordinates + np.reshape(self._psf_centre, (2, 1, 1))
+        # Calculate resampled PSF using cubic spline interpolation
+        resampled_psf = ndimage.map_coordinates(self._psf_data, resampled_coordinates)
+        # Rebin to the correct pixel scale
+        pixellated = utils.bin_array(resampled_psf, self._oversampling)
+        # Renormalise to correct for the effect of resampling
+        return pixellated / self._resampling_factor**2
 
     def _get_n_pix(self):
         # For accurate results want the calculation to include the whole PSF.
-        size = int(ceil(max(self._psf_data.shape) * self._psf_sampling / self.pixel_scale))
-        super()._get_n_pix(size=size)
+        size = int(math.ceil(max(self._psf_data.shape) * self._psf_sampling / self.pixel_scale))
+        return super()._get_n_pix(size=size)
 
     def _update_model(self):
+        self._resampled_scale = self.pixel_scale / self._oversampling
+        self._resampling_factor = self._psf_sampling / self._resampled_scale
 
         self._n_pix = self._get_n_pix()
         self._peak = self._get_peak()

@@ -124,7 +124,7 @@ Reference/API
   :skip: Sky
   :skip: Simple
   :skip: Table
-  :skip: Moffat_PSF
+  :skip: MoffatPSF
   :skip: ZodiacalLight
   :skip: WCS
   :skip: interp1d
@@ -156,7 +156,7 @@ Reference/API
   :skip: discretize_model
   :skip: Fittable2DModel
   :skip: Moffat2D
-  :skip: ensure_unit
+  :skip: utils
 
 .. automodapi:: gunagala.sky
   :skip: interp1d
