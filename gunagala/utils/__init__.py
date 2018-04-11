@@ -4,6 +4,7 @@
 # functions that will ultimately be merged into `astropy.utils`
 import os
 import functools
+import numpy as np
 import astropy.units as u
 from astropy.table import Table
 from astropy.utils.data import get_pkg_data_filename
@@ -127,3 +128,29 @@ def array_sequence_equal(array_sequence, reference=None):
                 # length but one or more elements differ in value.
                 return False
         return True
+
+
+def bin_array(data, binning_factor, bin_func=np.sum):
+    """
+    Bin 2D array data by a given factor using a given binning function.
+
+    Parameters
+    ----------
+    data: numpy.array
+        Array to be binned.
+    binning_factor: int
+        Size of the binning regions, in pixels.
+    bin_func: function, optional
+        Function to be used to combine the pixel values within each binning region.
+        The function must accept a numpy.array as the first argument, and accept an
+        axis keyword argument to specify which array axis to peform the combination
+        on. Default numpy.sum().
+
+    Returns
+    -------
+    binned: numpy.array
+        Binned array.
+    """
+    shape = (data.shape[0]//binning_factor, binning_factor,
+             data.shape[1]//binning_factor, binning_factor)
+    return bin_func(bin_func(data.reshape(shape), axis=3), axis=1)

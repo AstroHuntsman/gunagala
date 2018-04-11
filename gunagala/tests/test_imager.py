@@ -7,7 +7,7 @@ import astropy.constants as c
 from gunagala.optic import Optic
 from gunagala.optical_filter import Filter
 from gunagala.camera import Camera
-from gunagala.psf import PSF, Moffat_PSF
+from gunagala.psf import PSF, MoffatPSF
 from gunagala.sky import Sky, Simple, ZodiacalLight
 from gunagala.imager import Imager
 from gunagala.imager import create_imagers
@@ -67,7 +67,7 @@ def sky(request):
 
 @pytest.fixture(scope='module')
 def psf():
-    psf = Moffat_PSF(FWHM=1 / 30 * u.arcminute, shape=4.7)
+    psf = MoffatPSF(FWHM=1 / 30 * u.arcminute, shape=4.7)
     return psf
 
 

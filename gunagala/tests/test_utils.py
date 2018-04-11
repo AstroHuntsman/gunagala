@@ -78,3 +78,9 @@ def test_array_reference():
                                       reference=(1.2, 1.3) * u.m) is False
     assert utils.array_sequence_equal(((1.2, 1.4) * u.m, (1.2, 1.4) * u.m),
                                       reference=(1.2, 1.4, 1.3) * u.m) is False
+
+
+def test_bin_array():
+    d = np.arange(16).reshape((4,4))
+    assert (utils.bin_array(d, 2) == np.array([[10, 18], [42, 50]])).all()
+    assert (utils.bin_array(d, 2, bin_func=np.mean) == np.array([[2.5, 4.5], [10.5, 12.5]])).all()
