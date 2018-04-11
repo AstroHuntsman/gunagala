@@ -156,7 +156,6 @@ Reference/API
   :skip: discretize_model
   :skip: Fittable2DModel
   :skip: Moffat2D
-  :skip: utils
 
 .. automodapi:: gunagala.sky
   :skip: interp1d

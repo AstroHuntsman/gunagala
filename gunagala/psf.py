@@ -360,7 +360,7 @@ class PixellatedPSF(PSF):
             pixellated PSF will be somewhat less due to truncation of the
             PSF wings by the edge of the image.
         """
-        resampled_size = size * self._oversampling
+        resampled_size = int(size) * self._oversampling
         # Arrays of pixel coordinates relative to array centre
         resampled_coordinates = np.mgrid[-(resampled_size - 1) / 2:resampled_size / 2,
                                          -(resampled_size - 1) / 2:resampled_size / 2]
