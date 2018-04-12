@@ -2,6 +2,7 @@
 Cameras (stricly the image sensor subsystem, not including optics, optical filters, etc)
 """
 import os
+import numpy as np
 
 from astropy import units as u
 from astropy.table import Table
@@ -55,6 +56,13 @@ class Camera:
     minimum_exposure : astropy.units.Quantity
         Length of the shortest exposure that the camera is able to
         take.
+    dark_current_dist : scipy.stats.rv_continuous, optional
+        A 'frozen' continuous random variable object that describes the distribution
+        of dark currents for the pixels in the image sensor. Used to create a `dark frame`
+        of uncorrelated dark current values. If not given no dark frame is created.
+    dark_current_seed: int, optional
+        Seed used to initialise the random number generator before creating the dark
+        frame. Set to a fixed value if you need to repeatedly generate the same dark frame.
 
     Attributes
     ----------
@@ -86,9 +94,23 @@ class Camera:
         Sequence of wavelengths from the QE data
     QE : astropy.units.Quantity
         Sequence of quantum efficiency values from the QE data.
+    dark_frame: astropy.units.Quantity or None
+        Array containing the dark current values for the pixels of the image sensor
     """
-    def __init__(self, bit_depth, full_well, gain, bias, readout_time, pixel_size, resolution,
-                 read_noise, dark_current, QE, minimum_exposure):
+    def __init__(self,
+                 bit_depth,
+                 full_well,
+                 gain,
+                 bias,
+                 readout_time,
+                 pixel_size,
+                 resolution,
+                 read_noise,
+                 dark_current,
+                 QE,
+                 minimum_exposure,
+                 dark_current_dist=None,
+                 dark_current_seed=None):
 
         self.bit_depth = int(bit_depth)
         self.full_well = ensure_unit(full_well, u.electron / u.pixel)
@@ -112,3 +134,44 @@ class Camera:
         self.wavelengths, self.QE = get_table_data(QE,
                                                    column_names=('Wavelength', 'QE'),
                                                    column_units=(u.nm, u.electron / u.photon))
+
+        # Generate dark frame
+        if dark_current_dist is not None:
+            try:
+                dark_current_dist.rvs
+            except AttributeError:
+                raise ValueError("dark_current_dist ({}) has no rvs() method!".format(dark_current_dist))
+            self.dark_frame = self._make_dark_frame(dark_current_dist, dark_current_seed)
+        else:
+            self.dark_frame = None
+
+    def _make_dark_frame(self, distribution, seed=None):
+        """
+        Function to create a dark current 'image' in electrons per second per pixel.
+
+        Creates an array of random, uncorrelated dark current values drawn from the
+        statistical distribution defined by the `distribution` parameter and returns
+        it as an astropy.units.Quantity.
+
+        Parameters
+        ----------
+        distribution : scipy.stats.rv_continuous
+            A 'frozen' continuous random variable object that describes the distribution
+            of dark current values for the pixels in the image sensor.
+        seed: int
+            Seed used to initialise the random number generator before creating the dark
+            frame. Set to a fixed value if you need to repeatedly generate the same dark
+            frame.
+        """
+        if seed is not None:
+            # Initialise RNG
+            np.random.seed(seed)
+
+        dark_frame = distribution.rvs(size=self.resolution.value.astype(int))
+        dark_frame = dark_frame * u.electron / (u.second * u.pixel)\
+
+        if seed is not None:
+            # Re-initialise RNG with random seed
+            np.random.seed()
+
+        return dark_frame

@@ -50,23 +50,7 @@ class Imager:
         # Precalculate dark frame
         self.dark_current, self.dark_frame = self._make_dark_frame(temperature)
 
-    def _make_dark_frame(self, temperature, alpha=0.0488/u.Kelvin, beta=-12.772, shape=0.4, seed=None):
-        """
-        Function to create a dark current 'image' in electrons per second per pixel given
-        an image sensor temperature and a set of coefficients for a simple dark current model.
-        Modal dark current for the image sensor as a whole is modelled as D.C. = 10**(alpha * T + beta) where
-        T is the temperature in Kelvin.  Individual pixel dark currents are random uncorrelated values from
-        a log normal distribution so that there is a semi-realistic tail of 'hot pixels'.
-        For reproducible dark frames the random number generator seed can optionally be specified.
-        """
-        temperature = temperature.to(u.Kelvin, equivalencies=u.equivalencies.temperature())
-        mode = 10**(alpha * temperature + beta) * u.electron / (u.second)
-        scale = mode * np.exp(shape**2)
-        if seed:
-            np.random.seed(seed)
-        dark_frame = lognorm.rvs(shape, scale=scale, size=(self.wcs._naxis2, self.wcs._naxis1))
 
-        return mode, dark_frame
 
     def _effective_areas(self):
         """
@@ -136,78 +120,3 @@ class Imager:
             zl_ep[f] = (np.trapz(self.zl.photon_sfd * eff_area_interp, x=self.zl.waves))
 
         return zl_ep
-
-    def get_pixel_coords(self, centre):
-        """
-        Utility function to return a SkyCoord array containing the on sky position
-        of the centre of all the pixels in the image centre, given a SkyCoord for
-        the field centre
-        """
-        # Ensure centre is a SkyCoord (this allows entering centre as a string)
-        if not isinstance(centre, SkyCoord):
-            centre = SkyCoord(centre)
-
-        # Set field centre coordinates in internal WCS
-        self.wcs.wcs.crval = [centre.icrs.ra.value, centre.icrs.dec.value]
-
-        # Arrays of pixel coordinates
-        XY = np.meshgrid(np.arange(self.wcs._naxis1), np.arange(self.wcs._naxis2))
-
-        # Convert to arrays of RA, dec (ICRS, decimal degrees)
-        RAdec = self.wcs.all_pix2world(XY[0], XY[1], 0)
-
-        return SkyCoord(RAdec[0], RAdec[1], unit='deg')
-
-    def make_noiseless_image(self, centre, time, f):
-        """
-        Function to create a noiseless simulated image for a given image centre and observation time.
-        """
-        electrons = np.zeros((self.wcs._naxis2, self.wcs._naxis1)) * u.electron / u.second
-
-        # Calculate observed zodiacal light background.
-        # Get relative zodical light brightness for each pixel
-        # Note, side effect of this is setting centre of self.wcs
-        pixel_coords = self.get_pixel_coords(centre)
-        zl_rel = zl.relative_brightness(pixel_coords, time)
-
-        # TODO: calculate area of each pixel, for now use nominal pixel scale^2
-        # Finally multiply to get an observed zodical light image
-        zl_obs = self.zl_obs_ep * zl_rel * self.pixel_scale**2
-
-        electrons += zl_obs
-
-        noiseless = ccdproc.CCDData(electrons, wcs=self.wcs)
-
-        return noiseless
-
-    def make_image_real(self, noiseless, exp_time, subtract_dark = False):
-        """
-        Given a noiseless simulated image in electrons per pixel add dark current,
-        Poisson noise and read noise, and convert to ADU using the predefined gain.
-        """
-        # Scale photoelectron rates by exposure time
-        data = noiseless.data * noiseless.unit * exp_time
-        # Add dark current
-        data += self.dark_frame * exp_time
-        # Force to electron units
-        data = data.to(u.electron)
-        # Apply Poisson noise. This is not unit-aware, need to restore them manually
-        data = (poisson.rvs(data/u.electron)).astype('float64') * u.electron
-        # Apply read noise. Again need to restore units manually
-        data += norm.rvs(scale=self.read_noise/u.electron, size=data.shape) * u.electron
-        # Optionally subtract a Perfect Dark
-        if subtract_dark:
-            data -= (self.dark_frame * exp_time).to(u.electron)
-        # Convert to ADU
-        data /= self.gain
-        # Force to adu (just here to catch unit problems)
-        data = data.to(u.adu)
-        # 'Analogue to digital conversion'
-        data = np.where(data < 2**16 * u.adu, data, (2**16 - 1) * u.adu)
-        data = data.astype('uint16')
-        # Data type conversion strips units so need to put them back manually
-        image = ccdproc.CCDData(data, wcs=noiseless.wcs, unit=u.adu)
-        image.header['EXPTIME'] = exp_time
-        image.header['DARKSUB'] = subtract_dark
-
-        return image
