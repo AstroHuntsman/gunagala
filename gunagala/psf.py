@@ -97,17 +97,17 @@ class PSF():
         saturation limits for point sources.
         """
         # Odd number of pixels (1) so offsets = (0, 0) is centred on a pixel
-        centred_psf = self.pixellated(size=1, offsets=(0, 0))
+        centred_psf = self.pixellated(size=(1, 1), offsets=(0, 0))
         return centred_psf[0, 0] / u.pixel
 
-    def _get_n_pix(self, size=20):
+    def _get_n_pix(self, size=(20, 20)):
         """
         Calculate the effective number of pixels for PSF fitting
         photometry with this PSF, in the worse case where the PSF is
         centred on the corner of a pixel.
         """
         # Want a even number of pixels.
-        size = size + size % 2
+        size = tuple(s + s % 2 for s in size)
         # Even number of pixels so offsets = (0, 0) is centred on pixel corners
         corner_psf = self.pixellated(size, offsets=(0, 0))
         return 1 / ((corner_psf**2).sum()) * u.pixel
@@ -166,7 +166,7 @@ class FittablePSF(PSF, Fittable2DModel):
         if self.pixel_scale:
             self._update_model()
 
-    def pixellated(self, size=21, offsets=(0.0, 0.0)):
+    def pixellated(self, size=(21, 21), offsets=(0.0, 0.0)):
         """
         Calculates a pixellated version of the PSF.
 
@@ -176,11 +176,10 @@ class FittablePSF(PSF, Fittable2DModel):
 
         Parameters
         ----------
-        size : int, optional
-            Size of the pixellated PSF to calculate, the returned image
-            will have `size` x `size` pixels. Default value 21.
+        size : (int, int) optional
+            x, y size of the pixellated PSF to calculate. Default value (21, 21).
         offset : tuple of floats, optional
-            y and x axis offsets of the centre of the PSF from the centre
+            x and y axis offsets of the centre of the PSF from the centre
             of the returned image, in pixels.
 
         Returns
@@ -191,16 +190,16 @@ class FittablePSF(PSF, Fittable2DModel):
             pixellated PSF will be somewhat less due to truncation of the
             PSF wings by the edge of the image.
         """
-        size = int(size)
-        if size <= 0:
+        size = tuple(int(s) for s in size)
+        if size[0] <= 0 or size[1] <=0:
             raise ValueError("`size` must be > 0, got {}!".format(size))
 
         # Update PSF centre coordinates
         self.x_0 = offsets[0]
         self.y_0 = offsets[1]
 
-        xrange = (-(size - 1) / 2, (size + 1) / 2)
-        yrange = (-(size - 1) / 2, (size + 1) / 2)
+        xrange = (-(size[0] - 1) / 2, (size[0] + 1) / 2)
+        yrange = (-(size[1] - 1) / 2, (size[1] + 1) / 2)
 
         return discretize_model(self, xrange, yrange, mode='oversample', factor=10)
 
@@ -336,7 +335,7 @@ class PixellatedPSF(PSF):
             self.pixel_scale = pixel_scale
 
 
-    def pixellated(self, size=21, offsets=(0.0, 0.0)):
+    def pixellated(self, size=(21, 21), offsets=(0.0, 0.0)):
         """
         Calculates a pixellated version of the PSF.
 
@@ -345,9 +344,8 @@ class PixellatedPSF(PSF):
 
         Parameters
         ----------
-        size : int, optional
-            Size of the pixellated PSF to calculate, the returned image
-            will have `size` x `size` pixels. Default value 21.
+        size : (int, int), optional
+            x, y size of the pixellated PSF to calculate. Default value (21, 21).
         offsets : tuple of floats, optional
             y and x axis offsets of the centre of the PSF from the centre
             of the returned image, in pixels.
@@ -360,10 +358,10 @@ class PixellatedPSF(PSF):
             pixellated PSF will be somewhat less due to truncation of the
             PSF wings by the edge of the image.
         """
-        resampled_size = int(size) * self._oversampling
+        resampled_size = tuple(int(s) * self._oversampling for s in size)
         # Arrays of pixel coordinates relative to array centre
-        resampled_coordinates = np.mgrid[-(resampled_size - 1) / 2:resampled_size / 2,
-                                         -(resampled_size - 1) / 2:resampled_size / 2]
+        resampled_coordinates = np.mgrid[-(resampled_size[1] - 1) / 2:resampled_size[1] / 2,
+                                         -(resampled_size[0] - 1) / 2:resampled_size[0] / 2]
         # Apply offsets so origin is at desired PSF centre
         resampled_offsets = np.reshape(np.array(offsets) * self._oversampling, (2, 1, 1))
         resampled_coordinates = resampled_coordinates - resampled_offsets
@@ -380,7 +378,8 @@ class PixellatedPSF(PSF):
 
     def _get_n_pix(self):
         # For accurate results want the calculation to include the whole PSF.
-        size = int(math.ceil(max(self._psf_data.shape) * self._psf_sampling / self.pixel_scale))
+        size = tuple(int(math.ceil(s * self._psf_sampling / self.pixel_scale)) \
+                     for s in self._psf_data.shape)
         return super()._get_n_pix(size=size)
 
     def _update_model(self):

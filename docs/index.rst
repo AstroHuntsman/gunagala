@@ -127,6 +127,7 @@ Reference/API
   :skip: MoffatPSF
   :skip: ZodiacalLight
   :skip: WCS
+  :skip: SkyCoord
   :skip: interp1d
   :no-inheritance-diagram:
 

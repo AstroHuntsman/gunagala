@@ -13,9 +13,9 @@ from matplotlib import pyplot as plt
 
 from astropy import constants as c
 from astropy import units as u
-from astropy.table import Table
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
+from astropy.nddata import CCDData
 
 from gunagala.optic import Optic
 from gunagala.optical_filter import Filter
@@ -248,10 +248,9 @@ class Imager:
 
         # Construct a simple template WCS to store the focal plane configuration parameters
         self.wcs = WCS(naxis=2)
-        self.wcs._naxis1 = self.camera.resolution[0].value
-        self.wcs._naxis2 = self.camera.resolution[1].value
-        self.wcs.wcs.crpix = [(self.camera.resolution[0].value + 1)/2,
-                              (self.camera.resolution[1].value + 1)/2]
+        self.wcs._naxis1, self.wcs._naxis2 = self.camera.resolution.value.astype(int)
+        self.wcs.wcs.crpix = [(self.camera.resolution[0].value - 1)/2,
+                              (self.camera.resolution[1].value - 1)/2]
         self.wcs.wcs.cdelt = [self.pixel_scale.to(u.degree / u.pixel).value,
                               self.pixel_scale.to(u.degree / u.pixel).value]
         self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
@@ -1533,29 +1532,59 @@ class Imager:
 
         return SkyCoord(RAdec[0], RAdec[1], unit='deg')
 
-    def make_noiseless_image(self, centre, time, f):
+    def make_noiseless_image(self,
+                             centre,
+                             obs_time,
+                             filter_name,
+                             stars=None):
         """
-        Function to create a noiseless simulated image for a given image centre and observation time.
+        Creates a noiseless simulated image for a given image centre and observation time.
+
+        Parameters
+        ----------
+        centre : astropy.coordinates.SkyCoord or str
+            Sky coordinates of the image centre. Must be either a SkyCoord object or convertible
+            to one by the constructor of SkyCoord.
+        obs_time : astropy.time.Time or str
+            Time of the obseration. This can be relevant when calculating the sky background
+            and source positions. Must be either a Time object or convertible to one by the
+            constructor of Time.
+        filter_name : str
+            Name of the optical filter to use.
+        stars : sequence, optional
+            Sequence containing
+
+        Returns
+        -------
+        noiseless : astropy.nddata.CDDData
+            Noiseless image in the form of a CCDData object.
         """
-        electrons = np.zeros((self.wcs._naxis2, self.wcs._naxis1)) * u.electron / u.second
+        electrons = np.zeros((self.wcs._naxis2,
+                              self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
 
-        # Calculate observed zodiacal light background.
-        # Get relative zodical light brightness for each pixel
-        # Note, side effect of this is setting centre of self.wcs
-        pixel_coords = self.get_pixel_coords(centre)
-        zl_rel = zl.relative_brightness(pixel_coords, time)
+        # Calculate observed sky background
+        sky_rate = self.sky_rate[filter_name]
+        if hasattr(self.sky, 'relative_brightness'):
+            pixel_coords = self.get_pixel_coords(centre)
+            relative_sky = self.sky.relative_brightness(pixel_coords, obs_time)
+            sky_rate = sky_rate * relative_sky
+        electrons = electrons + sky_rate
 
-        # TODO: calculate area of each pixel, for now use nominal pixel scale^2
-        # Finally multiply to get an observed zodical light image
-        zl_obs = self.zl_obs_ep * zl_rel * self.pixel_scale**2
+        if stars is not None:
+            for (coords, magnitude) in stars:
+                coords = SkyCoord(coords)
+                pixel_coords = self.wcs.all_world2pix(((coords.ra.degree, coords.dec.degree),), 0) \
+                    - self.wcs.wcs.crpix
+                star_rate = self.ABmag_to_rate(magnitude, filter_name)
+                star_image = star_rate * self.psf.pixellated(size=self.camera.resolution.value,
+                                                             offsets=pixel_coords) / u.pixel
+                electrons = electrons + star_image
 
-        electrons += zl_obs
-
-        noiseless = ccdproc.CCDData(electrons, wcs=self.wcs)
+        noiseless = CCDData(electrons, wcs=self.wcs)
 
         return noiseless
 
-    def make_image_real(self, noiseless, exp_time, subtract_dark = False):
+    def make_image_real(self, noiseless, exp_time, subtract_dark=False):
         """
         Given a noiseless simulated image in electrons per pixel add dark current,
         Poisson noise and read noise, and convert to ADU using the predefined gain.
@@ -1563,25 +1592,35 @@ class Imager:
         # Scale photoelectron rates by exposure time
         data = noiseless.data * noiseless.unit * exp_time
         # Add dark current
-        data += self.dark_frame * exp_time
+        if self.camera.dark_frame is None:
+            data += self.camera.dark_current * exp_time
+        else:
+            data += self.camera.dark_frame * exp_time
         # Force to electron units
-        data = data.to(u.electron)
+        data = (data * u.pixel).to(u.electron)
         # Apply Poisson noise. This is not unit-aware, need to restore them manually
         data = (poisson.rvs(data/u.electron)).astype('float64') * u.electron
         # Apply read noise. Again need to restore units manually
-        data += norm.rvs(scale=self.read_noise/u.electron, size=data.shape) * u.electron
+        data += norm.rvs(scale=self.camera.read_noise / (u.electron * u.pixel),
+                         size=data.shape) * u.electron
         # Optionally subtract a Perfect Dark
         if subtract_dark:
-            data -= (self.dark_frame * exp_time).to(u.electron)
+            if self.camera.dark_frame is None:
+                data -= self.camera.dark_current * exp_time * u.pixel
+            else:
+                data -= self.camera.dark_frame * exp_time * u.pixel
         # Convert to ADU
-        data /= self.gain
+        data /= self.camera.gain
         # Force to adu (just here to catch unit problems)
         data = data.to(u.adu)
         # 'Analogue to digital conversion'
-        data = np.where(data < 2**16 * u.adu, data, (2**16 - 1) * u.adu)
+        data += self.camera.bias * u.pixel
+        data = np.where(data < 2**self.camera.bit_depth * u.adu,
+                        data,
+                        (2**self.camera.bit_depth - 1) * u.adu)
         data = data.astype('uint16')
         # Data type conversion strips units so need to put them back manually
-        image = ccdproc.CCDData(data, wcs=noiseless.wcs, unit=u.adu)
+        image = CCDData(data, wcs=noiseless.wcs, unit=u.adu)
         image.header['EXPTIME'] = exp_time
         image.header['DARKSUB'] = subtract_dark
 
