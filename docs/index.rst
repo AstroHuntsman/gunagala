@@ -123,11 +123,11 @@ Reference/API
   :skip: PSF
   :skip: Sky
   :skip: Simple
-  :skip: Table
   :skip: MoffatPSF
   :skip: ZodiacalLight
   :skip: WCS
   :skip: SkyCoord
+  :skip: CCDData
   :skip: interp1d
   :no-inheritance-diagram:
 
