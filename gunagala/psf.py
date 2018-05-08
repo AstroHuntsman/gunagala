@@ -345,7 +345,7 @@ class PixellatedPSF(PSF):
         Parameters
         ----------
         size : (int, int), optional
-            x, y size of the pixellated PSF to calculate. Default value (21, 21).
+            y, x size of the pixellated PSF to calculate. Default value (21, 21).
         offsets : tuple of floats, optional
             y and x axis offsets of the centre of the PSF from the centre
             of the returned image, in pixels.
@@ -353,28 +353,62 @@ class PixellatedPSF(PSF):
         Returns
         -------
         pixellated : numpy.array
-            Pixellated PSF image with `size` by `size` pixels. The PSF
+            Pixellated PSF image with `size[0]` by `size[1]` pixels. The PSF
             is normalised to an integral of 1 however the sum of the
             pixellated PSF will be somewhat less due to truncation of the
             PSF wings by the edge of the image.
         """
-        resampled_size = tuple(int(s) * self._oversampling for s in size)
-        # Arrays of pixel coordinates relative to array centre
-        resampled_coordinates = np.mgrid[-(resampled_size[1] - 1) / 2:resampled_size[1] / 2,
-                                         -(resampled_size[0] - 1) / 2:resampled_size[0] / 2]
+        # Only want to caclulate resampled PSF for positions that fall within the PSF data,
+        # otherwise end up filling the RAM with lots of double precision zeros.
+
+        # Initialise output array
+        pixellated = np.zeros(size)
+
+        # Limits of psf_data footprint in its own pixel coordinates
+        limits =  np.array(((-0.5, -0.5),
+                            (self._psf_data.shape[0] + 0.5, self._psf_data.shape[1] + 0.5)))
+        # Subtract position of PSF centre so origin is at the PSF centre
+        limits = limits - self._psf_centre
+        # Convert from psf_data pixel units to output array pixel units
+        limits = limits * self._psf_sampling / self.pixel_scale
+        # Reverse offsets so origin is at output array centre
+        limits = limits + np.array(offsets)
+        # Move origin to output array origin
+        limits = limits + np.array(size) / 2
+        # Round down lower limits, round up upper limits
+        limits = np.array((limits[0] - limits[0] % 1, limits[1] - limits[1] % -1), dtype=np.int)
+        # Crop to output array edges
+        limits = np.array((np.where(limits[0] >= 0, limits[0], 0),
+                           np.where(limits[1] < size, limits[1], np.array(size) - 1)))
+        # Store output array limits for later
+        y0 = limits[0][0]
+        y1 = limits[1][0] + 1
+        x0 = limits[0][1]
+        x1 = limits[1][1] + 1
+        # Origin back to output array centre
+        limits = limits - np.array(size) / 2
+        # Expand to pixel edges
+        limits = np.array((limits[0] - 0.5, limits[1] + 0.5))
+        # Convert from output array pixels to oversampled array pixels
+        limits = limits * self._oversampling
+        # Arrays of coordinates relative to output array centre
+        resampled_coordinates = np.mgrid[limits[0][0]:limits[1][0],
+                                         limits[0][1]:limits[1][1]]
         # Apply offsets so origin is at desired PSF centre
         resampled_offsets = np.reshape(np.array(offsets) * self._oversampling, (2, 1, 1))
         resampled_coordinates = resampled_coordinates - resampled_offsets
-        # Convert from resampled PSF pixel units to original PSF pixel units
+        # Convert from resampled PSF pixel units to PSF data pixel units
         resampled_coordinates = resampled_coordinates / self._resampling_factor
         # Add position of PSF centre in psf_data so origin is the same as the origin of psf_data
         resampled_coordinates = resampled_coordinates + np.reshape(self._psf_centre, (2, 1, 1))
         # Calculate resampled PSF using cubic spline interpolation
         resampled_psf = ndimage.map_coordinates(self._psf_data, resampled_coordinates)
-        # Rebin to the correct pixel scale
-        pixellated = utils.bin_array(resampled_psf, self._oversampling)
         # Renormalise to correct for the effect of resampling
-        return pixellated / self._resampling_factor**2
+        resampled_psf = resampled_psf / self._resampling_factor**2
+        # Rebin to the output array pixel scale & insert into output array in the correct place.
+        pixellated[y0:y1,x0:x1] = utils.bin_array(resampled_psf, self._oversampling)
+
+        return pixellated
 
     def _get_n_pix(self):
         # For accurate results want the calculation to include the whole PSF.

@@ -1576,7 +1576,8 @@ class Imager:
                 pixel_coords = self.wcs.all_world2pix(((coords.ra.degree, coords.dec.degree),), 0) \
                     - self.wcs.wcs.crpix
                 star_rate = self.ABmag_to_rate(magnitude, filter_name)
-                star_image = star_rate * self.psf.pixellated(size=self.camera.resolution.value,
+                size = self.camera.resolution.value.astype(np.int)
+                star_image = star_rate * self.psf.pixellated(size=size,
                                                              offsets=pixel_coords) / u.pixel
                 electrons = electrons + star_image
 
