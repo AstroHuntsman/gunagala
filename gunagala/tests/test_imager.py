@@ -4,13 +4,13 @@ import numpy as np
 import astropy.units as u
 import astropy.constants as c
 
-from ..optic import Optic
-from ..optical_filter import Filter
-from ..camera import Camera
-from ..psf import PSF, Moffat_PSF
-from ..sky import Sky, Simple, ZodiacalLight
-from ..imager import Imager
-from ..imager import create_imagers
+from gunagala.optic import Optic
+from gunagala.optical_filter import Filter
+from gunagala.camera import Camera
+from gunagala.psf import PSF, Moffat_PSF
+from gunagala.sky import Sky, Simple, ZodiacalLight
+from gunagala.imager import Imager
+from gunagala.imager import create_imagers
 
 
 @pytest.fixture(scope='module')

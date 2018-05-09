@@ -1,12 +1,14 @@
-name: gungala
+name: gunagala
 
 channels:
     - astropy
 
 dependencies:
+    - python=3.6
     - astropy
     - scipy
     - matplotlib
+    - numpy
     - PyYAML
-#   - pip:
-#       - dependency_from_pip
+    - pip:
+        - sphinx-astropy

@@ -31,8 +31,8 @@ def _get_test_runner():
 
 
 def test(package=None, test_path=None, args=None, plugins=None,
-         verbose=False, pastebin=None, remote_data=True, pep8=False,
-         pdb=False, coverage=True, open_files=False, **kwargs):
+         verbose=False, pastebin=None, remote_data=False, pep8=False,
+         pdb=False, coverage=False, open_files=False, **kwargs):
     """
     Run the tests using `py.test <http://pytest.org/latest>`__. A proper set
     of arguments is constructed and passed to `pytest.main`_.

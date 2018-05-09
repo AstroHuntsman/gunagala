@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import astropy.units as u
 
-from ..psf import PSF, Moffat_PSF
+from gunagala.psf import PSF, Moffat_PSF
 
 
 @pytest.fixture(scope='module')

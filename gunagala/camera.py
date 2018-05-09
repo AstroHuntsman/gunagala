@@ -7,7 +7,7 @@ from astropy import units as u
 from astropy.table import Table
 from astropy.utils.data import get_pkg_data_filename
 
-from .utils import ensure_unit
+from gunagala.utils import ensure_unit
 
 
 data_dir = 'data/performance_data'

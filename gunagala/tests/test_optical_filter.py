@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import astropy.units as u
 
-from ..optical_filter import Filter
+from gunagala.optical_filter import Filter
 
 
 @pytest.fixture(scope='module', params=('table', 'chebyshev', 'butterworth'))

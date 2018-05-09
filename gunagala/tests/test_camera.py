@@ -1,7 +1,7 @@
 import pytest
 import astropy.units as u
 
-from ..camera import Camera
+from gunagala.camera import Camera
 
 
 @pytest.fixture(scope='module')

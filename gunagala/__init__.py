@@ -1,15 +1,20 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 """
-This is a Python package from modelling the performance of astronomical instruments, including SNR/sensitivity limit/ETC calculations and simulating data.
+Performance modelling for astronomical instruments
+
+This is a Python package for modelling the performance of astronomical instruments, including
+SNR/ETC/sensitivity limit calculations and generation of simulated data.
 """
 
-# Affiliated packages may add whatever they like to this file, but
+# Packages may add whatever they like to this file, but
 # should keep this content at the top.
 # ----------------------------------------------------------------------------
 from ._astropy_init import *
 # ----------------------------------------------------------------------------
 
-# For egg_info test builds to pass, put package imports here.
 if not _ASTROPY_SETUP_:
+    # For egg_info test builds to pass, put package imports here.
+
+    #from .example_mod import *
     pass
