@@ -325,7 +325,7 @@ class PixellatedPSF(PSF):
             self._psf_data = psf_data
         self._psf_sampling = utils.ensure_unit(psf_sampling, u.arcsecond / u.pixel)
         if psf_centre is None:
-            self._psf_centre = np.array(psf_data.shape) / 2
+            self._psf_centre = (np.array(psf_data.shape) - 1) / 2
         else:
             self._psf_centre = np.array(psf_centre)
         self._oversampling = int(oversampling)
@@ -358,6 +358,9 @@ class PixellatedPSF(PSF):
             pixellated PSF will be somewhat less due to truncation of the
             PSF wings by the edge of the image.
         """
+        size = np.array(size, dtype=np.int)
+        offsets = np.array(offsets)
+
         # Only want to caclulate resampled PSF for positions that fall within the PSF data,
         # otherwise end up filling the RAM with lots of double precision zeros.
 
@@ -366,59 +369,67 @@ class PixellatedPSF(PSF):
 
         # Limits of psf_data footprint in its own pixel coordinates
         limits =  np.array(((-0.5, -0.5),
-                            (self._psf_data.shape[0] + 0.5, self._psf_data.shape[1] + 0.5)))
+                            (self._psf_data.shape[0] - 0.5, self._psf_data.shape[1] - 0.5)))
         # Subtract position of PSF centre so origin is at the PSF centre
         limits = limits - self._psf_centre
         # Convert from psf_data pixel units to output array pixel units
-        limits = limits * self._psf_sampling / self.pixel_scale
+        limits = limits * (self._psf_sampling / self.pixel_scale).to(u.dimensionless_unscaled).value
         # Reverse offsets so origin is at output array centre
         limits = limits + np.array(offsets)
         # Move origin to output array origin
-        limits = limits + np.array(size) / 2
-        # Round down lower limits, round up upper limits
-        limits = np.array((limits[0] - limits[0] % 1, limits[1] - limits[1] % -1), dtype=np.int)
+        limits = limits + (size - 1) / 2
+        # Round limits to the centres of the pixels containing the boundary
+        limits = np.rint(limits).astype(np.int)
         # Crop to output array edges
         limits = np.array((np.where(limits[0] >= 0, limits[0], 0),
-                           np.where(limits[1] < size, limits[1], np.array(size) - 1)))
+                           np.where(limits[1] < size, limits[1], size - 1)))
         # Store output array limits for later
-        y0 = limits[0][0]
-        y1 = limits[1][0] + 1
-        x0 = limits[0][1]
-        x1 = limits[1][1] + 1
+        y0 = limits[0, 0]
+        y1 = limits[1, 0] + 1
+        x0 = limits[0, 1]
+        x1 = limits[1, 1] + 1
         # Origin back to output array centre
-        limits = limits - np.array(size) / 2
+        limits = limits - (size - 1) / 2
         # Expand to pixel edges
         limits = np.array((limits[0] - 0.5, limits[1] + 0.5))
         # Convert from output array pixels to oversampled array pixels
         limits = limits * self._oversampling
-        # Arrays of coordinates relative to output array centre
-        resampled_coordinates = np.mgrid[limits[0][0]:limits[1][0],
-                                         limits[0][1]:limits[1][1]]
-        # Apply offsets so origin is at desired PSF centre
-        resampled_offsets = np.reshape(np.array(offsets) * self._oversampling, (2, 1, 1))
-        resampled_coordinates = resampled_coordinates - resampled_offsets
-        # Convert from resampled PSF pixel units to PSF data pixel units
-        resampled_coordinates = resampled_coordinates / self._resampling_factor
+        # Contract by half a pixel to align with oversampled pixel centres
+        limits = np.array((limits[0] + 0.5, limits[1] - 0.5))
+        # Apply offset so origin is at desired PSF centre
+        limits = limits - offsets * self._oversampling
+        # Convert from resampled PSF pixel units to psf_data pixel units
+        limits = limits / self._resampling_factor
         # Add position of PSF centre in psf_data so origin is the same as the origin of psf_data
-        resampled_coordinates = resampled_coordinates + np.reshape(self._psf_centre, (2, 1, 1))
+        limits = limits + self._psf_centre
+        # Arrays of coordinates relative to output array centre. The half steps are to avoid
+        # problems with floating point precision & the stopping condition.
+        step = 1 / self._resampling_factor
+        resampled_coordinates = np.mgrid[limits[0, 0]:limits[1, 0] + step / 2:step,
+                                         limits[0, 1]:limits[1, 1] + step / 2:step]
         # Calculate resampled PSF using cubic spline interpolation
         resampled_psf = ndimage.map_coordinates(self._psf_data, resampled_coordinates)
+        # Rebin to the output array pixel scale
+        resampled_psf = utils.bin_array(resampled_psf, self._oversampling)
         # Renormalise to correct for the effect of resampling
         resampled_psf = resampled_psf / self._resampling_factor**2
-        # Rebin to the output array pixel scale & insert into output array in the correct place.
-        pixellated[y0:y1,x0:x1] = utils.bin_array(resampled_psf, self._oversampling)
+        # Insert into output array in the correct place.
+        pixellated[y0:y1,x0:x1] = resampled_psf
 
         return pixellated
 
     def _get_n_pix(self):
         # For accurate results want the calculation to include the whole PSF.
-        size = tuple(int(math.ceil(s * self._psf_sampling / self.pixel_scale)) \
-                     for s in self._psf_data.shape)
+        psf_data_size = np.array(self._psf_data.shape)
+        size = psf_data_size + np.abs(self._psf_centre - psf_data_size / 2)
+        size = size * self._psf_sampling / self.pixel_scale
+        size = np.ceil(size + 0.5)
         return super()._get_n_pix(size=size)
 
     def _update_model(self):
         self._resampled_scale = self.pixel_scale / self._oversampling
-        self._resampling_factor = self._psf_sampling / self._resampled_scale
+        self._resampling_factor = (self._psf_sampling / self._resampled_scale)
+        self._resampling_factor = self._resampling_factor.to(u.dimensionless_unscaled).value
 
         self._n_pix = self._get_n_pix()
         self._peak = self._get_peak()
