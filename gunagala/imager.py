@@ -1559,8 +1559,8 @@ class Imager:
         noiseless : astropy.nddata.CDDData
             Noiseless image in the form of a CCDData object.
         """
-        electrons = np.zeros((self.wcs._naxis2,
-                              self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
+        electrons = np.zeros((self.wcs._naxis1,
+                              self.wcs._naxis2)) * u.electron / (u.second * u.pixel)
 
         # Calculate observed sky background
         sky_rate = self.sky_rate[filter_name]
