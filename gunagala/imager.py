@@ -248,9 +248,9 @@ class Imager:
 
         # Construct a simple template WCS to store the focal plane configuration parameters
         self.wcs = WCS(naxis=2)
-        self.wcs._naxis1, self.wcs._naxis2 = self.camera.resolution.value.astype(int)
-        self.wcs.wcs.crpix = [(self.camera.resolution[0].value - 1)/2,
-                              (self.camera.resolution[1].value - 1)/2]
+        self.wcs._naxis2, self.wcs._naxis1 = self.camera.resolution.value.astype(int)
+        self.wcs.wcs.crpix = [(self.camera.resolution[1].value - 1)/2,
+                              (self.camera.resolution[0].value - 1)/2]
         self.wcs.wcs.cdelt = [self.pixel_scale.to(u.degree / u.pixel).value,
                               self.pixel_scale.to(u.degree / u.pixel).value]
         self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
@@ -1559,8 +1559,8 @@ class Imager:
         noiseless : astropy.nddata.CDDData
             Noiseless image in the form of a CCDData object.
         """
-        electrons = np.zeros((self.wcs._naxis1,
-                              self.wcs._naxis2)) * u.electron / (u.second * u.pixel)
+        electrons = np.zeros((self.wcs._naxis2,
+                              self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
 
         # Calculate observed sky background
         sky_rate = self.sky_rate[filter_name]

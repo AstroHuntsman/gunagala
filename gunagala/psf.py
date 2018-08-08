@@ -177,9 +177,9 @@ class FittablePSF(PSF, Fittable2DModel):
         Parameters
         ----------
         size : (int, int) optional
-            x, y size of the pixellated PSF to calculate. Default value (21, 21).
+            y, x size of the pixellated PSF to calculate. Default value (21, 21).
         offset : tuple of floats, optional
-            x and y axis offsets of the centre of the PSF from the centre
+            y and x axis offsets of the centre of the PSF from the centre
             of the returned image, in pixels.
 
         Returns
@@ -195,11 +195,11 @@ class FittablePSF(PSF, Fittable2DModel):
             raise ValueError("`size` must be > 0, got {}!".format(size))
 
         # Update PSF centre coordinates
-        self.x_0 = offsets[0]
-        self.y_0 = offsets[1]
+        self.x_0 = offsets[1]
+        self.y_0 = offsets[0]
 
-        xrange = (-(size[0] - 1) / 2, (size[0] + 1) / 2)
-        yrange = (-(size[1] - 1) / 2, (size[1] + 1) / 2)
+        xrange = (-(size[1] - 1) / 2, (size[1] + 1) / 2)
+        yrange = (-(size[0] - 1) / 2, (size[0] + 1) / 2)
 
         return discretize_model(self, xrange, yrange, mode='oversample', factor=10)
 
