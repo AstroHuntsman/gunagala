@@ -423,6 +423,7 @@ class PixellatedPSF(PSF):
         # Insert into output array in the correct place.
         pixellated[y0:y1,x0:x1] = resampled_psf
         print('pixellated[y0:y1,x0:x1].shape = ', pixellated[y0:y1,x0:x1].shape, 'resampled_psf.shape = ', resampled_psf.shape)#
+        print('resampled_coordinates.shape,min = ', resampled_coordinates.shape, resampled_coordinates.min())#
         return pixellated
 
     def _get_n_pix(self):
