@@ -360,7 +360,7 @@ class PixellatedPSF(PSF):
         """
         size = np.array(size, dtype=np.int)
         offsets = np.array(offsets)
-
+        print('size = ', size, 'offsets = ', offsets)#
         # Only want to caclulate resampled PSF for positions that fall within the PSF data,
         # otherwise end up filling the RAM with lots of double precision zeros.
 
@@ -390,8 +390,10 @@ class PixellatedPSF(PSF):
         x1 = limits[1, 1] + 1
         # Origin back to output array centre
         limits = limits - (size - 1) / 2
+        print('limits = ', limits)#
         # Expand to pixel edges
         limits = np.array((limits[0] - 0.5, limits[1] + 0.5))
+        print('limits = ', limits)#
         # Convert from output array pixels to oversampled array pixels
         limits = limits * self._oversampling
         # Contract by half a pixel to align with oversampled pixel centres
