@@ -416,6 +416,7 @@ class PixellatedPSF(PSF):
         print('resampled_coordinates.shape,min = ', resampled_coordinates.shape, resampled_coordinates.min())#
         # Rebin to the output array pixel scale
         resampled_psf = utils.bin_array(resampled_psf, self._oversampling)
+        print('resampled_coordinates.shape,min = ', resampled_coordinates.shape, resampled_coordinates.min())#
         # Renormalise to correct for the effect of resampling
         resampled_psf = resampled_psf / self._resampling_factor**2
         # Insert into output array in the correct place.
