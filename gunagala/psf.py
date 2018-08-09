@@ -412,8 +412,8 @@ class PixellatedPSF(PSF):
                                          limits[0, 1]:limits[1, 1] + step / 2:step]
         print('resampled_coordinates.shape,min = ', resampled_coordinates.shape, resampled_coordinates.min())#
         # Calculate resampled PSF using cubic spline interpolation
-        resampled_psf = ndimage.map_coordinates(self._psf_data, resampled_coordinates)
-        print('resampled_psf.shape,min = ', resampled_psf.shape, resampled_psf.min())#
+        resampled_psf = ndimage.map_coordinates(self._psf_data, resampled_coordinates)in 
+        print('resampled_psf.shape,min = ', resampled_psf.shape, resampled_psf.min(), self._psf_data.min())#
         # Rebin to the output array pixel scale
         resampled_psf = utils.bin_array(resampled_psf, self._oversampling)
         print('resampled_psf.shape,min = ', resampled_psf.shape, resampled_psf.min())#
