@@ -12,7 +12,7 @@ from astropy.modeling import Fittable2DModel
 from astropy.modeling.functional_models import Moffat2D
 
 from gunagala import utils
-
+from warnings import warn
 
 class PSF():
     """
@@ -360,7 +360,6 @@ class PixellatedPSF(PSF):
         """
         size = np.array(size, dtype=np.int)
         offsets = np.array(offsets)
-        print('size = ', size, 'offsets = ', offsets)#
         # Only want to caclulate resampled PSF for positions that fall within the PSF data,
         # otherwise end up filling the RAM with lots of double precision zeros.
 
@@ -390,10 +389,8 @@ class PixellatedPSF(PSF):
         x1 = limits[1, 1] + 1
         # Origin back to output array centre
         limits = limits - (size - 1) / 2
-        print('limits = ', limits)#
         # Expand to pixel edges
         limits = np.array((limits[0] - 0.5, limits[1] + 0.5))
-        print('limits = ', limits)#
         # Convert from output array pixels to oversampled array pixels
         limits = limits * self._oversampling
         # Contract by half a pixel to align with oversampled pixel centres
@@ -406,24 +403,23 @@ class PixellatedPSF(PSF):
         limits = limits + self._psf_centre
         # Arrays of coordinates relative to output array centre. The half steps are to avoid
         # problems with floating point precision & the stopping condition.
-        print('limits1 = ', limits)#
         step = 1 / self._resampling_factor
         resampled_coordinates = np.mgrid[limits[0, 0]:limits[1, 0] + step / 2:step,
                                          limits[0, 1]:limits[1, 1] + step / 2:step]
-        print('resampled_coordinates.shape,min = ', resampled_coordinates.shape, resampled_coordinates.min())#
         # Calculate resampled PSF using cubic spline interpolation
         resampled_psf = ndimage.map_coordinates(self._psf_data, resampled_coordinates)
-        print('resampled_psf.shape,min = ', resampled_psf.shape, resampled_psf.min(), self._psf_data.min())#
         # Rebin to the output array pixel scale
         resampled_psf = utils.bin_array(resampled_psf, self._oversampling)
-        print('resampled_psf.shape,min = ', resampled_psf.shape, resampled_psf.min())#
         # Renormalise to correct for the effect of resampling
         resampled_psf = resampled_psf / self._resampling_factor**2
-        print('resampled_psf.shape,min = ', resampled_psf.shape, resampled_psf.min())#
+        # Check and if there are some below zero pixel value, clip them to zero and renormalize resampled_psf.
+        if (resampled_psf < 0).any():
+            warn("Warning: below zero values in resampled PSF. Clipping to zero.")
+            previous_total = resampled_psf.sum()
+            resampled_psf[resampled_psf < 0] = 0
+            resampled_psf *= previous_total / resampled_psf.sum()
         # Insert into output array in the correct place.
         pixellated[y0:y1,x0:x1] = resampled_psf
-        print('pixellated[y0:y1,x0:x1].shape = ', pixellated[y0:y1,x0:x1].shape, 'resampled_psf.shape = ', resampled_psf.shape)#
-        print('resampled_psf.shape,min = ', resampled_psf.shape, resampled_psf.min())#
         return pixellated
 
     def _get_n_pix(self):
