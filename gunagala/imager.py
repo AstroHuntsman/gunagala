@@ -1578,7 +1578,6 @@ class Imager:
                 star_rate = self.ABmag_to_rate(magnitude, filter_name)
                 star_image = star_rate * self.psf.pixellated(size=self.camera.resolution,
                                                              offsets=pixel_coords) / u.pixel
-                print('eee', electrons.min(), star_image.min(), star_rate)
                 electrons = electrons + star_image
 
         noiseless = CCDData(electrons, wcs=self.wcs)

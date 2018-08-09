@@ -417,7 +417,7 @@ class PixellatedPSF(PSF):
         resampled_psf = resampled_psf / self._resampling_factor**2
         # Insert into output array in the correct place.
         pixellated[y0:y1,x0:x1] = resampled_psf
-
+        print('pixellated[y0:y1,x0:x1].shape = ', pixellated[y0:y1,x0:x1].shape, 'resampled_psf.shape = ', resampled_psf.shape)#
         return pixellated
 
     def _get_n_pix(self):
