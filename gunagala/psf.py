@@ -416,7 +416,7 @@ class PixellatedPSF(PSF):
         # Renormalise to correct for the effect of resampling
         resampled_psf = resampled_psf / self._resampling_factor**2
         # Insert into output array in the correct place.
-        print('pixellated[y0:y1,x0:x1].shape = ', pixellated[y0:y1,x0:x1].shape, 'resampled_psf.shape = ', resampled_psf.shape)#
+        print('pixellated[y0:y1,x0:x1].shape = ', pixellated[y0:y1,x0:x1].shape, 'resampled_psf.shape = ', resampled_psf.shape, 33)#
         pixellated[y0:y1,x0:x1] = resampled_psf
         print('pixellated[y0:y1,x0:x1].shape = ', pixellated[y0:y1,x0:x1].shape, 'resampled_psf.shape = ', resampled_psf.shape)#
         return pixellated
