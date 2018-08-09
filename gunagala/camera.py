@@ -39,6 +39,7 @@ class Camera:
     Resolution : astropy.units.Quantity
         Two element Quantity containing the number of pixels across
         the image sensor in both horizontal & vertical directions.
+        (y, x)
     read_noise astropy.units.Quantity
         Intrinsic noise of image sensor and readout electronics, in
         electrons/pixel units.
