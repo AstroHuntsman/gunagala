@@ -419,6 +419,7 @@ class PixellatedPSF(PSF):
         print('resampled_coordinates.shape,min = ', resampled_coordinates.shape, resampled_coordinates.min())#
         # Renormalise to correct for the effect of resampling
         resampled_psf = resampled_psf / self._resampling_factor**2
+        print('resampled_coordinates.shape,min = ', resampled_coordinates.shape, resampled_coordinates.min())#
         # Insert into output array in the correct place.
         pixellated[y0:y1,x0:x1] = resampled_psf
         print('pixellated[y0:y1,x0:x1].shape = ', pixellated[y0:y1,x0:x1].shape, 'resampled_psf.shape = ', resampled_psf.shape)#
