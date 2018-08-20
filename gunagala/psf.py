@@ -412,7 +412,7 @@ class PixellatedPSF(PSF):
         resampled_psf = utils.bin_array(resampled_psf, self._oversampling)
         # Renormalise to correct for the effect of resampling
         resampled_psf = resampled_psf / self._resampling_factor**2
-        # Check and if there are some below zero pixel value, clip them to zero and renormalize resampled_psf.
+        # Check and if there are some below zero pixel values, clip them to zero and renormalize resampled_psf.
         if (resampled_psf < 0).any():
             warn("Warning: below zero values in resampled PSF. Clipping to zero.")
             previous_total = resampled_psf.sum()
