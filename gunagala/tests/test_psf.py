@@ -143,4 +143,3 @@ def test_pixellated(pix_psf):
 def test_pixellated(pix_psf):
     with pytest.raises(ValueError):
         pix_psf.pixellated(size=(-1.3, 1.3))
-        
