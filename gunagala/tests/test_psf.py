@@ -103,11 +103,12 @@ def test_pixellated(psf):
 
 def test_pixellated(pix_psf):
     pixellated = pix_psf.pixellated()
+    assert (pixellated >= 0 ).all()
     assert isinstance(pixellated, np.ndarray)
     assert pixellated.shape == (21, 21)
-    pixellated = pix_psf.pixellated(size=(7.2, 7.2))
+    pixellated = pix_psf.pixellated(size=(7.2, 9.2))
     assert isinstance(pixellated, np.ndarray)
-    assert pixellated.shape == (7, 7)
+    assert pixellated.shape == (7, 9)
     pixellated = pix_psf.pixellated(offsets=(0.3, -0.7))
     assert isinstance(pixellated, np.ndarray)
     assert pixellated.shape == (21, 21)
