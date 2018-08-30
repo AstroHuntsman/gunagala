@@ -38,7 +38,7 @@ class Camera:
         Pixel pitch. Square pixels are assumed.
     Resolution : astropy.units.Quantity
         Two element Quantity containing the number of pixels across
-        the image sensor in both horizontal & vertical directions.
+        the image sensor in both vertical & horizontal directions.
         (y, x)
     read_noise astropy.units.Quantity
         Intrinsic noise of image sensor and readout electronics, in

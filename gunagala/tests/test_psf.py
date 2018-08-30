@@ -86,59 +86,42 @@ def test_shape(psf):
         psf.shape = 0.5
     psf.shape = 4.7
 
+@pytest.mark.parametrize("pixellated, shape, expected", [
+    (psf.pixellated(), psf.pixellated().shape, (21, 21)),
+    (pix_psf.pixellated(), pix_psf.pixellated().shape, (21, 21)),
+])
 
-def test_pixellated(psf):
-    pixellated = pix_psf.pixellated()
+def test_pixellated_square(pixellated, shape, expected):
     assert isinstance(pixellated, np.ndarray)
-    assert pixellated.shape == (21, 21)
+    assert shape == expected
     assert (pixellated >= 0 ).all()
     assert np.isfinite(pixellated).all()
 
+@pytest.mark.parametrize("pixellated, shape, expected", [
+    (psf.pixellated(size=(7.2, 9.2)), psf.pixellated().shape, (7, 9)),
+    (pix_psf.pixellated(size=(7.2, 9.2)), pix_psf.pixellated().shape, (7, 9)),
+])
 
-def test_pixellated(psf):
-    pixellated = pix_psf.pixellated(size=(7.2, 9.2))
+def test_pixellated_rectangle(pixellated, shape, expected):
     assert isinstance(pixellated, np.ndarray)
-    assert pixellated.shape == (7, 9)
+    assert shape == expected
     assert (pixellated >= 0 ).all()
     assert np.isfinite(pixellated).all()
 
+@pytest.mark.parametrize("pixellated, shape, expected", [
+    (psf.pixellated(offsets=(0.3, -0.7)), psf.pixellated().shape, (21, 21)),
+    (pix_psf.pixellated(offsets=(0.3, -0.7)), pix_psf.pixellated().shape, (21, 21)),
+])
 
-def test_pixellated(psf):
-    pixellated = pix_psf.pixellated(offsets=(0.3, -0.7))
+def test_pixellated_offsets(pixellated, shape, expected):
     assert isinstance(pixellated, np.ndarray)
-    assert pixellated.shape == (21, 21)
+    assert shape == expected
     assert (pixellated >= 0 ).all()
     assert np.isfinite(pixellated).all()
-
 
 def test_pixellated(psf):
     with pytest.raises(ValueError):
         psf.pixellated(size=(1.3, -1.3))
-
-
-def test_pixellated(pix_psf):
-    pixellated = pix_psf.pixellated()
-    assert isinstance(pixellated, np.ndarray)
-    assert pixellated.shape == (21, 21)
-    assert (pixellated >= 0 ).all()
-    assert np.isfinite(pixellated).all()
-
-
-def test_pixellated(pix_psf):
-    pixellated = pix_psf.pixellated(size=(7.2, 9.2))
-    assert isinstance(pixellated, np.ndarray)
-    assert pixellated.shape == (7, 9)
-    assert (pixellated >= 0 ).all()
-    assert np.isfinite(pixellated).all()
-
-
-def test_pixellated(pix_psf):
-    pixellated = pix_psf.pixellated(offsets=(0.3, -0.7))
-    assert isinstance(pixellated, np.ndarray)
-    assert pixellated.shape == (21, 21)
-    assert (pixellated >= 0 ).all()
-    assert np.isfinite(pixellated).all()
-
 
 def test_pixellated(pix_psf):
     with pytest.raises(ValueError):
