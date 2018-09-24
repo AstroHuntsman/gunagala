@@ -283,6 +283,26 @@ class Imager:
                 # Not a callable, should be a Simple sky model which just returns AB magnitudes per square arcsecond
                 self.sky_rate[filter_name] = self.SB_to_rate(sb, filter_name)
 
+
+    def set_WCS_centre(self, centre):
+        """
+        Set the WCS CRVALs of the Imager instance to centre.
+
+        Parameters
+        ----------
+        centre : astropy.coordinates.SkyCoord or str
+            Sky coordinates of the image centre. Must be either a SkyCoord object or convertible
+            to one by the constructor of SkyCoord.
+        """
+
+        # Ensure centre is a SkyCoord (this allows entering centre as a string)
+        if not isinstance(centre, SkyCoord):
+            centre = SkyCoord(centre)
+
+        # Set field centre coordinates in internal WCS
+        self.wcs.wcs.crval = [centre.icrs.ra.value, centre.icrs.dec.value]
+
+
     def extended_source_signal_noise(self, surface_brightness, filter_name, total_exp_time, sub_exp_time,
                                      calc_type='per pixel', saturation_check=True, binning=1):
         """
@@ -1521,9 +1541,6 @@ class Imager:
         if not isinstance(centre, SkyCoord):
             centre = SkyCoord(centre)
 
-        # Set field centre coordinates in internal WCS
-        self.wcs.wcs.crval = [centre.icrs.ra.value, centre.icrs.dec.value]
-
         # Arrays of pixel coordinates
         XY = np.meshgrid(np.arange(self.wcs._naxis1), np.arange(self.wcs._naxis2))
 
@@ -1561,7 +1578,7 @@ class Imager:
         """
         electrons = np.zeros((self.wcs._naxis2,
                               self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
-        pixel_coords = self.get_pixel_coords(centre)
+        self.set_WCS_centre(centre)
 
         # Calculate observed sky background
         sky_rate = self.sky_rate[filter_name]
