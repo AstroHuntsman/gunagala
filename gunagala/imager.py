@@ -1561,11 +1561,11 @@ class Imager:
         """
         electrons = np.zeros((self.wcs._naxis2,
                               self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
+        pixel_coords = self.get_pixel_coords(centre)
 
         # Calculate observed sky background
         sky_rate = self.sky_rate[filter_name]
         if hasattr(self.sky, 'relative_brightness'):
-            pixel_coords = self.get_pixel_coords(centre)
             relative_sky = self.sky.relative_brightness(pixel_coords, obs_time)
             sky_rate = sky_rate * relative_sky
         electrons = electrons + sky_rate
