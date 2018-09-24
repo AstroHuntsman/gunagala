@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 
 from astropy import constants as c
 from astropy import units as u
-from astropy.wcs import WCS
+from astropy.wcs import WCS, InvalidTransformError
 from astropy.coordinates import SkyCoord
 from astropy.nddata import CCDData
 
@@ -254,6 +254,7 @@ class Imager:
         self.wcs.wcs.cdelt = [self.pixel_scale.to(u.degree / u.pixel).value,
                               self.pixel_scale.to(u.degree / u.pixel).value]
         self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+        self.wcs.wcs.crval = [None, None]
 
         # Calculate end to end efficiencies, etc.
         self._efficiencies()
@@ -1531,21 +1532,19 @@ class Imager:
 
         return magnitudes.to(u.ABmag), snrs.to(u.dimensionless_unscaled)
 
-    def get_pixel_coords(self, centre):
+    def get_pixel_coords(self):
         """
         Utility function to return a SkyCoord array containing the on sky position
-        of the centre of all the pixels in the image, given a SkyCoord for the
-        field centre
+        of the centre of all the pixels in the image.
         """
-        # Ensure centre is a SkyCoord (this allows entering centre as a string)
-        if not isinstance(centre, SkyCoord):
-            centre = SkyCoord(centre)
-
         # Arrays of pixel coordinates
         XY = np.meshgrid(np.arange(self.wcs._naxis1), np.arange(self.wcs._naxis2))
 
         # Convert to arrays of RA, dec (ICRS, decimal degrees)
-        RAdec = self.wcs.all_pix2world(XY[0], XY[1], 0)
+        try:
+            RAdec = self.wcs.all_pix2world(XY[0], XY[1], 0)
+        except InvalidTransformError:
+            raise ValueError("CRVAL not set! Must call set_WCS_centre before get_pixel_coords")
 
         return SkyCoord(RAdec[0], RAdec[1], unit='deg')
 
@@ -1583,6 +1582,7 @@ class Imager:
         # Calculate observed sky background
         sky_rate = self.sky_rate[filter_name]
         if hasattr(self.sky, 'relative_brightness'):
+            pixel_coords = self.get_pixel_coords()
             relative_sky = self.sky.relative_brightness(pixel_coords, obs_time)
             sky_rate = sky_rate * relative_sky
         electrons = electrons + sky_rate
