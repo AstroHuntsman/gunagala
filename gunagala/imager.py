@@ -298,7 +298,7 @@ class Imager:
 
         # Ensure centre is a SkyCoord (this allows entering centre as a string)
         if not isinstance(centre, SkyCoord):
-            centre = SkyCoord(centre)
+            centre = SkyCoord(centre, unit='deg')
 
         # Set field centre coordinates in internal WCS
         self.wcs.wcs.crval = [centre.icrs.ra.value, centre.icrs.dec.value]
@@ -1589,7 +1589,7 @@ class Imager:
 
         if stars is not None:
             for (coords, magnitude) in stars:
-                coords = SkyCoord(coords)
+                coords = SkyCoord(coords, unit='deg')
                 pixel_coords = self.wcs.all_world2pix(((coords.ra.degree, coords.dec.degree),), 0) \
                     - self.wcs.wcs.crpix
                 star_rate = self.ABmag_to_rate(magnitude, filter_name)

@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 import astropy.units as u
 import astropy.constants as c
+from astropy.coordinates import SkyCoord
 
 from gunagala.optic import Optic
 from gunagala.optical_filter import Filter
@@ -733,6 +734,20 @@ def test_snr_vs_mag(imager, filter_name, tmpdir):
                                        snr_target=10.0)
     # Roughly background limited at faint end, 10 times higher SNR should be about 2.5 mag brighter
     assert mags3[-1].value == pytest.approx(mags[-1].value - 2.5, abs=0.1)
+
+
+def test_get_pixel_coords(imager):
+    test_coord_string = "189.9976325 -11.6230544"
+
+    # test if someone calls get_pixel_coords without first running set_WCS_centre
+    with pytest.raises(ValueError):
+        imager.get_pixel_coords()
+
+    # now set WCS centre first, then try and get_pixel_coords
+    imager.set_WCS_centre(test_coord_string)
+    centre_field_pixels = imager.get_pixel_coords()
+    assert imager.wcs._naxis1 == centre_field_pixels.shape[1]
+    assert imager.wcs._naxis2 == centre_field_pixels.shape[0]
 
 
 def test_create_imagers():
