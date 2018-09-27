@@ -78,6 +78,12 @@ def imager(lens, ccd, filters, psf, sky):
     return imager
 
 
+@pytest.fixture(scope='function')
+def imager_function_scope(lens, ccd, filters, psf, sky):
+    imager = Imager(optic=lens, camera=ccd, filters=filters, psf=psf, sky=sky, num_imagers=5, num_per_computer=5)
+    return imager
+
+
 def test_init(imager):
     assert isinstance(imager, Imager)
     assert imager.pixel_scale == (5.4 * u.micron / (391 * u.mm * u.pixel)).to(u.arcsecond / u.pixel,
@@ -736,18 +742,20 @@ def test_snr_vs_mag(imager, filter_name, tmpdir):
     assert mags3[-1].value == pytest.approx(mags[-1].value - 2.5, abs=0.1)
 
 
-def test_get_pixel_coords(imager):
+def test_get_pixel_coords_no_WCS_call_first(imager_function_scope):
+    # test if get_pixel_coords is called without first running set_WCS_centre
+    with pytest.raises(ValueError):
+        imager_function_scope.get_pixel_coords()
+
+
+def test_get_pixel_coords_with_WCS_call_first(imager_function_scope):
     test_coord_string = "189.9976325 -11.6230544"
 
-    # test if someone calls get_pixel_coords without first running set_WCS_centre
-    with pytest.raises(ValueError):
-        imager.get_pixel_coords()
-
     # now set WCS centre first, then try and get_pixel_coords
-    imager.set_WCS_centre(test_coord_string, unit='deg')
-    centre_field_pixels = imager.get_pixel_coords()
-    assert imager.wcs._naxis1 == centre_field_pixels.shape[1]
-    assert imager.wcs._naxis2 == centre_field_pixels.shape[0]
+    imager_function_scope.set_WCS_centre(test_coord_string, unit='deg')
+    centre_field_pixels = imager_function_scope.get_pixel_coords()
+    assert imager_function_scope.wcs._naxis1 == centre_field_pixels.shape[1]
+    assert imager_function_scope.wcs._naxis2 == centre_field_pixels.shape[0]
 
 
 def test_create_imagers():
