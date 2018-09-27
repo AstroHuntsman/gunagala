@@ -744,7 +744,7 @@ def test_get_pixel_coords(imager):
         imager.get_pixel_coords()
 
     # now set WCS centre first, then try and get_pixel_coords
-    imager.set_WCS_centre(test_coord_string)
+    imager.set_WCS_centre(test_coord_string, unit='deg')
     centre_field_pixels = imager.get_pixel_coords()
     assert imager.wcs._naxis1 == centre_field_pixels.shape[1]
     assert imager.wcs._naxis2 == centre_field_pixels.shape[0]
