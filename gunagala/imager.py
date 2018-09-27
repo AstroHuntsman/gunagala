@@ -294,6 +294,9 @@ class Imager:
         centre : astropy.coordinates.SkyCoord or str
             Sky coordinates of the image centre. Must be either a SkyCoord object or convertible
             to one by the constructor of SkyCoord.
+        unit : str (optional)
+            Unit is the same as for the astropy.coordinates.SkyCoord(), e.g.
+            SkyCoord(RAdec[0], RAdec[1], unit='deg')
         """
 
         # Ensure centre is a SkyCoord (this allows entering centre as a string)
@@ -1552,25 +1555,32 @@ class Imager:
                              centre,
                              obs_time,
                              filter_name,
+                             centre_kwargs={},
                              stars=None,
-                             *args,
-                             **kwargs):
+                             star_kwargs={}):
         """
-        Creates a noiseless simulated image for a given image centre and observation time.
+        Creates a noiseless simulated image for a given image centre and
+        observation time.
 
         Parameters
         ----------
         centre : astropy.coordinates.SkyCoord or str
-            Sky coordinates of the image centre. Must be either a SkyCoord object or convertible
-            to one by the constructor of SkyCoord.
+            Sky coordinates of the image centre. Must be either a SkyCoord
+            object or convertible to one by the constructor of SkyCoord.
         obs_time : astropy.time.Time or str
-            Time of the obseration. This can be relevant when calculating the sky background
-            and source positions. Must be either a Time object or convertible to one by the
-            constructor of Time.
+            Time of the obseration. This can be relevant when calculating the
+            sky background and source positions. Must be either a Time object
+            or convertible to one by the constructor of Time.
         filter_name : str
             Name of the optical filter to use.
         stars : sequence, optional
             Sequence containing
+        centre_kwargs : dict (optional)
+            kwargs for centre kwargs to send to astropy.coordinates.SkyCoord(),
+            e.g. SkyCoord(centre, unit='deg')
+        star_kwargs : dict (optional)
+            kwargs for star kwargs to send to astropy.coordinates.SkyCoord(),
+            e.g. SkyCoord(coords, unit='deg')
 
         Returns
         -------
@@ -1579,7 +1589,7 @@ class Imager:
         """
         electrons = np.zeros((self.wcs._naxis2,
                               self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
-        self.set_WCS_centre(centre, **kwargs)
+        self.set_WCS_centre(centre, **centre_kwargs)
 
         # Calculate observed sky background
         sky_rate = self.sky_rate[filter_name]
@@ -1591,7 +1601,7 @@ class Imager:
 
         if stars is not None:
             for (coords, magnitude) in stars:
-                coords = SkyCoord(coords, **kwargs)
+                coords = SkyCoord(coords, **star_kwargs)
                 pixel_coords = self.wcs.all_world2pix(((coords.ra.degree, coords.dec.degree),), 0) \
                     - self.wcs.wcs.crpix
                 star_rate = self.ABmag_to_rate(magnitude, filter_name)
