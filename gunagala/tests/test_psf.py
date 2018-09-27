@@ -33,112 +33,114 @@ def test_base():
 
 
 def test_moffat(psf_moffat):
-    assert isinstance(psf, MoffatPSF)
-    assert isinstance(psf, PSF)
+    assert isinstance(psf_moffat, MoffatPSF)
+    assert isinstance(psf_moffat, PSF)
 
 
 def test_pix(psf_pixellated):
-    assert isinstance(pix_psf, PixellatedPSF)
-    assert isinstance(pix_psf, PSF)
+    assert isinstance(psf_pixellated, PixellatedPSF)
+    assert isinstance(psf_pixellated, PSF)
 
 
 def test_FWHM(psf_moffat):
-    assert psf.FWHM == 2 * u.arcsecond
-    psf.FWHM = 4 * u.arcsecond
-    assert psf.FWHM == 1 / 15 * u.arcminute
+    assert psf_moffat.FWHM == 2 * u.arcsecond
+    psf_moffat.FWHM = 4 * u.arcsecond
+    assert psf_moffat.FWHM == 1 / 15 * u.arcminute
     with pytest.raises(ValueError):
-        psf.FWHM = -1 * u.degree
-    psf.FWHM = 2 * u.arcsecond
+        psf_moffat.FWHM = -1 * u.degree
+    psf_moffat.FWHM = 2 * u.arcsecond
 
 
 def test_pixel_scale(psf_moffat):
-    psf.pixel_scale = 2.85 * u.arcsecond / u.pixel
-    assert psf.pixel_scale == 2.85 * u.arcsecond / u.pixel
+    psf_moffat.pixel_scale = 2.85 * u.arcsecond / u.pixel
+    assert psf_moffat.pixel_scale == 2.85 * u.arcsecond / u.pixel
 
 
 def test_pixel_scale_pix(psf_pixellated):
-    pix_psf.pixel_scale = (1 / 3) * u.arcsecond / u.pixel
-    assert pix_psf.pixel_scale == (1 / 3) * u.arcsecond / u.pixel
-    pix_psf.pixel_scale = (2 / 3) * u.arcsecond / u.pixel
+    psf_pixellated.pixel_scale = (1 / 3) * u.arcsecond / u.pixel
+    assert psf_pixellated.pixel_scale == (1 / 3) * u.arcsecond / u.pixel
+    psf_pixellated.pixel_scale = (2 / 3) * u.arcsecond / u.pixel
 
 
-@pytest.mark.parameterize("psf, expected_n_pix", [
-    (psf_moffat,4.25754067000986),
-    (psf_pixellated,21.06994544)],
-    ids=["moffat", "pixellated"]
-    )
+moffat = psf_moffat()
+pixellated = psf_pixellated()
 
 
-def test_n_pix(psf, expected_n_pix):
-    assert psf.n_pix / u.pixel == pytest.approx(expected_n_pix)
+# @pytest.mark.parametrize("psf, expected_n_pix", [
+#     (moffat, 4.25754067000986),
+#     (pixellated, pytest.approx(21.06994544))],
+#     ids=["moffat", "pixellated"]
+# )
+# def test_n_pix(psf, expected_n_pix):
+#     assert psf.n_pix  == expected_n_pix
+
+
+def test_n_pix(psf_moffat):
+    assert psf_moffat.n_pix == 4.25754067000986 * u.pixel
+
+
+def test_n_pix_pix(psf_pixellated):
+    assert psf_pixellated.n_pix / u.pixel == pytest.approx(21.069945447)
 
 
 def test_peak(psf_moffat):
-    assert psf.peak == 0.7134084656751443 / u.pixel
+    assert psf_moffat.peak == 0.7134084656751443 / u.pixel
 
 
 def test_peak_pix(psf_pixellated):
-    assert pix_psf.peak * u.pixel == pytest.approx(0.08073066)
+    assert psf_pixellated.peak * u.pixel == pytest.approx(0.08073066)
 
 
 def test_shape(psf_moffat):
-    assert psf.shape == 4.7
-    psf.shape = 2.5
-    assert psf.shape == 2.5
+    assert psf_moffat.shape == 4.7
+    psf_moffat.shape = 2.5
+    assert psf_moffat.shape == 2.5
     with pytest.raises(ValueError):
-        psf.shape = 0.5
-    psf.shape = 4.7
+        psf_moffat.shape = 0.5
+    psf_moffat.shape = 4.7
 
 
-@pytest.mark.parametrize("psf, expected", [
-    (psf_moffat, (21, 21)),
-    (psf_pixellated, (21, 21))],
+@pytest.mark.parametrize("psf, image_size", [
+    (moffat, (21, 21)),
+    (pixellated, (21, 21))],
     ids=["moffat", "pixellated"]
-    )
-
-
-def test_pixellated_square(psf, expected):
+)
+def test_pixellated_square(psf, image_size):
     assert isinstance(psf.pixellated(), np.ndarray)
-    assert psf.pixellated().shape == expected
-    assert (psf.pixellated() >= 0 ).all()
+    assert psf.pixellated().shape == image_size
+    assert (psf.pixellated() >= 0).all()
     assert np.isfinite(psf.pixellated()).all()
 
 
-@pytest.mark.parametrize("psf, expected", [
-    (psf_moffat, (7,9)),
-    (psf_pixellated, (7,9))],
+@pytest.mark.parametrize("psf, image_size", [
+    (moffat, (7, 9)),
+    (pixellated, (7, 9))],
     ids=["moffat", "pixellated"]
-    )
-
-
-def test_pixellated_rectangle(psf, expected):
+)
+def test_pixellated_rectangle(psf, image_size):
     assert isinstance(psf.pixellated(size=(7.2, 9.2)), np.ndarray)
-    assert psf.pixellated(size=(7.2, 9.2)).shape == expected
-    assert (psf.pixellated(size=(7.2, 9.2)) >= 0 ).all()
+    assert psf.pixellated(size=(7.2, 9.2)).shape == image_size
+    assert (psf.pixellated(size=(7.2, 9.2)) >= 0).all()
     assert np.isfinite(psf.pixellated(size=(7.2, 9.2))).all()
 
 
-@pytest.mark.parametrize("psf, expected", [
-    (psf_moffat, (21, 21)),
-    (psf_pixellated, (21, 21))],
+@pytest.mark.parametrize("psf, image_size", [
+    (moffat, (21, 21)),
+    (pixellated, (21, 21))],
     ids=["moffat", "pixellated"]
-    )
-
-
-def test_pixellated_offsets(psf, expected):
+)
+def test_pixellated_offsets(psf, image_size):
     assert isinstance(psf.pixellated(), np.ndarray)
-    assert psf.pixellated().shape == expected
-    assert (psf.pixellated() >= 0 ).all()
+    assert psf.pixellated().shape == image_size
+    assert (psf.pixellated() >= 0).all()
     assert np.isfinite(psf.pixellated()).all()
 
 
-@pytest.mark.parametrize("psf, expected", [
-    (psf_moffat, (1.3, -1.3)),
-    (psf_pixellated, (-1.3, 1.3))],
+@pytest.mark.parametrize("psf, test_size", [
+    (moffat, (1.3, -1.3)),
+    (pixellated, (-1.3, 1.3))],
     ids=["moffat", "pixellated"]
-    )
-
-
-def test_pixellated(psf, expected):
+)
+def test_pixellated(psf, test_size):
     with pytest.raises(ValueError):
-        psf.pixellated(size=expected)
+        psf.pixellated(size=test_size)
