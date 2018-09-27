@@ -12,7 +12,7 @@ from astropy.modeling import Fittable2DModel
 from astropy.modeling.functional_models import Moffat2D
 
 from gunagala import utils
-
+from warnings import warn
 
 class PSF():
     """
@@ -177,9 +177,9 @@ class FittablePSF(PSF, Fittable2DModel):
         Parameters
         ----------
         size : (int, int) optional
-            x, y size of the pixellated PSF to calculate. Default value (21, 21).
+            y, x size of the pixellated PSF to calculate. Default value (21, 21).
         offset : tuple of floats, optional
-            x and y axis offsets of the centre of the PSF from the centre
+            y and x axis offsets of the centre of the PSF from the centre
             of the returned image, in pixels.
 
         Returns
@@ -195,11 +195,11 @@ class FittablePSF(PSF, Fittable2DModel):
             raise ValueError("`size` must be > 0, got {}!".format(size))
 
         # Update PSF centre coordinates
-        self.x_0 = offsets[0]
-        self.y_0 = offsets[1]
+        self.x_0 = offsets[1]
+        self.y_0 = offsets[0]
 
-        xrange = (-(size[0] - 1) / 2, (size[0] + 1) / 2)
-        yrange = (-(size[1] - 1) / 2, (size[1] + 1) / 2)
+        xrange = (-(size[1] - 1) / 2, (size[1] + 1) / 2)
+        yrange = (-(size[0] - 1) / 2, (size[0] + 1) / 2)
 
         return discretize_model(self, xrange, yrange, mode='oversample', factor=10)
 
@@ -360,7 +360,6 @@ class PixellatedPSF(PSF):
         """
         size = np.array(size, dtype=np.int)
         offsets = np.array(offsets)
-
         # Only want to caclulate resampled PSF for positions that fall within the PSF data,
         # otherwise end up filling the RAM with lots of double precision zeros.
 
@@ -413,9 +412,14 @@ class PixellatedPSF(PSF):
         resampled_psf = utils.bin_array(resampled_psf, self._oversampling)
         # Renormalise to correct for the effect of resampling
         resampled_psf = resampled_psf / self._resampling_factor**2
+        # Check and if there are some below zero pixel values, clip them to zero and renormalize resampled_psf.
+        if (resampled_psf < 0).any():
+            warn("Warning: below zero values in resampled PSF. Clipping to zero.")
+            previous_total = resampled_psf.sum()
+            resampled_psf[resampled_psf < 0] = 0
+            resampled_psf *= previous_total / resampled_psf.sum()
         # Insert into output array in the correct place.
         pixellated[y0:y1,x0:x1] = resampled_psf
-
         return pixellated
 
     def _get_n_pix(self):

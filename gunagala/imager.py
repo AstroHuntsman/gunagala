@@ -248,9 +248,9 @@ class Imager:
 
         # Construct a simple template WCS to store the focal plane configuration parameters
         self.wcs = WCS(naxis=2)
-        self.wcs._naxis1, self.wcs._naxis2 = self.camera.resolution.value.astype(int)
-        self.wcs.wcs.crpix = [(self.camera.resolution[0].value - 1)/2,
-                              (self.camera.resolution[1].value - 1)/2]
+        self.wcs._naxis2, self.wcs._naxis1 = self.camera.resolution.value.astype(int)
+        self.wcs.wcs.crpix = [(self.camera.resolution[1].value - 1)/2,
+                              (self.camera.resolution[0].value - 1)/2]
         self.wcs.wcs.cdelt = [self.pixel_scale.to(u.degree / u.pixel).value,
                               self.pixel_scale.to(u.degree / u.pixel).value]
         self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
