@@ -1552,7 +1552,9 @@ class Imager:
                              centre,
                              obs_time,
                              filter_name,
-                             stars=None):
+                             stars=None,
+                             *args,
+                             **kwargs):
         """
         Creates a noiseless simulated image for a given image centre and observation time.
 
@@ -1589,7 +1591,7 @@ class Imager:
 
         if stars is not None:
             for (coords, magnitude) in stars:
-                coords = SkyCoord(coords)
+                coords = SkyCoord(coords, **kwargs)
                 pixel_coords = self.wcs.all_world2pix(((coords.ra.degree, coords.dec.degree),), 0) \
                     - self.wcs.wcs.crpix
                 star_rate = self.ABmag_to_rate(magnitude, filter_name)
