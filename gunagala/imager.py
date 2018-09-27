@@ -1579,7 +1579,7 @@ class Imager:
         """
         electrons = np.zeros((self.wcs._naxis2,
                               self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
-        self.set_WCS_centre(centre)
+        self.set_WCS_centre(centre, **kwargs)
 
         # Calculate observed sky background
         sky_rate = self.sky_rate[filter_name]
