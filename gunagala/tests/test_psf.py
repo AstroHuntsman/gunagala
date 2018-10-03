@@ -62,17 +62,14 @@ def test_pixel_scale_pix(psf_pixellated):
     psf_pixellated.pixel_scale = (2 / 3) * u.arcsecond / u.pixel
 
 
-moffat = psf_moffat()
-pixellated = psf_pixellated()
-
-
 # @pytest.mark.parametrize("psf, expected_n_pix", [
-#     (moffat, 4.25754067000986),
-#     (pixellated, pytest.approx(21.06994544))],
+#     (psf_moffat(), 4.25754067000986),
+#     (psf_pixellated(), 21.06994544)],
 #     ids=["moffat", "pixellated"]
 # )
 # def test_n_pix(psf, expected_n_pix):
-#     assert psf.n_pix  == expected_n_pix
+#     print(psf, psf.n_pix)
+#     assert psf.n_pix / u.pixel == pytest.approx(expected_n_pix)
 
 
 def test_n_pix(psf_moffat):
@@ -81,6 +78,16 @@ def test_n_pix(psf_moffat):
 
 def test_n_pix_pix(psf_pixellated):
     assert psf_pixellated.n_pix / u.pixel == pytest.approx(21.069945447)
+
+
+# @pytest.mark.parametrize("psf, expected_peak", [
+#     (psf_moffat(), 0.7134084656751443),
+#     (psf_pixellated(), 0.08073066)],
+#     ids=["moffat", "pixellated"]
+# )
+# def test_n_pix(psf, expected_peak):
+#     print(psf, psf.peak)
+#     assert psf.peak * u.pixel == pytest.approx(expected_peak)
 
 
 def test_peak(psf_moffat):
@@ -101,8 +108,8 @@ def test_shape(psf_moffat):
 
 
 @pytest.mark.parametrize("psf, image_size", [
-    (moffat, (21, 21)),
-    (pixellated, (21, 21))],
+    (psf_moffat(), (21, 21)),
+    (psf_pixellated(), (21, 21))],
     ids=["moffat", "pixellated"]
 )
 def test_pixellated_square(psf, image_size):
@@ -113,8 +120,8 @@ def test_pixellated_square(psf, image_size):
 
 
 @pytest.mark.parametrize("psf, image_size", [
-    (moffat, (7, 9)),
-    (pixellated, (7, 9))],
+    (psf_moffat(), (7, 9)),
+    (psf_pixellated(), (7, 9))],
     ids=["moffat", "pixellated"]
 )
 def test_pixellated_rectangle(psf, image_size):
@@ -125,8 +132,8 @@ def test_pixellated_rectangle(psf, image_size):
 
 
 @pytest.mark.parametrize("psf, image_size", [
-    (moffat, (21, 21)),
-    (pixellated, (21, 21))],
+    (psf_moffat(), (21, 21)),
+    (psf_pixellated(), (21, 21))],
     ids=["moffat", "pixellated"]
 )
 def test_pixellated_offsets(psf, image_size):
@@ -137,8 +144,8 @@ def test_pixellated_offsets(psf, image_size):
 
 
 @pytest.mark.parametrize("psf, test_size", [
-    (moffat, (1.3, -1.3)),
-    (pixellated, (-1.3, 1.3))],
+    (psf_moffat(), (1.3, -1.3)),
+    (psf_pixellated(), (-1.3, 1.3))],
     ids=["moffat", "pixellated"]
 )
 def test_pixellated(psf, test_size):
