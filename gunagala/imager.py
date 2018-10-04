@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 
 from astropy import constants as c
 from astropy import units as u
-from astropy.wcs import WCS
+from astropy.wcs import WCS, InvalidTransformError
 from astropy.coordinates import SkyCoord
 from astropy.nddata import CCDData
 
@@ -254,6 +254,7 @@ class Imager:
         self.wcs.wcs.cdelt = [self.pixel_scale.to(u.degree / u.pixel).value,
                               self.pixel_scale.to(u.degree / u.pixel).value]
         self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+        self.wcs.wcs.crval = [None, None]
 
         # Calculate end to end efficiencies, etc.
         self._efficiencies()
@@ -282,6 +283,29 @@ class Imager:
             else:
                 # Not a callable, should be a Simple sky model which just returns AB magnitudes per square arcsecond
                 self.sky_rate[filter_name] = self.SB_to_rate(sb, filter_name)
+
+
+    def set_WCS_centre(self, centre, *args, **kwargs):
+        """
+        Set the WCS CRVALs of the Imager instance to centre.
+
+        Parameters
+        ----------
+        centre : astropy.coordinates.SkyCoord or str
+            Sky coordinates of the image centre. Must be either a SkyCoord object or convertible
+            to one by the constructor of SkyCoord.
+        unit : str (optional)
+            Unit is the same as for the astropy.coordinates.SkyCoord(), e.g.
+            SkyCoord(RAdec[0], RAdec[1], unit='deg')
+        """
+
+        # Ensure centre is a SkyCoord (this allows entering centre as a string)
+        if not isinstance(centre, SkyCoord):
+            centre = SkyCoord(centre, **kwargs)
+
+        # Set field centre coordinates in internal WCS
+        self.wcs.wcs.crval = [centre.icrs.ra.value, centre.icrs.dec.value]
+
 
     def extended_source_signal_noise(self, surface_brightness, filter_name, total_exp_time, sub_exp_time,
                                      calc_type='per pixel', saturation_check=True, binning=1):
@@ -1511,24 +1535,19 @@ class Imager:
 
         return magnitudes.to(u.ABmag), snrs.to(u.dimensionless_unscaled)
 
-    def get_pixel_coords(self, centre):
+    def get_pixel_coords(self):
         """
         Utility function to return a SkyCoord array containing the on sky position
-        of the centre of all the pixels in the image, given a SkyCoord for the
-        field centre
+        of the centre of all the pixels in the image.
         """
-        # Ensure centre is a SkyCoord (this allows entering centre as a string)
-        if not isinstance(centre, SkyCoord):
-            centre = SkyCoord(centre)
-
-        # Set field centre coordinates in internal WCS
-        self.wcs.wcs.crval = [centre.icrs.ra.value, centre.icrs.dec.value]
-
         # Arrays of pixel coordinates
         XY = np.meshgrid(np.arange(self.wcs._naxis1), np.arange(self.wcs._naxis2))
 
         # Convert to arrays of RA, dec (ICRS, decimal degrees)
-        RAdec = self.wcs.all_pix2world(XY[0], XY[1], 0)
+        try:
+            RAdec = self.wcs.all_pix2world(XY[0], XY[1], 0)
+        except InvalidTransformError:
+            raise ValueError("CRVAL not set! Must call set_WCS_centre before get_pixel_coords")
 
         return SkyCoord(RAdec[0], RAdec[1], unit='deg')
 
@@ -1536,23 +1555,32 @@ class Imager:
                              centre,
                              obs_time,
                              filter_name,
-                             stars=None):
+                             centre_kwargs={},
+                             stars=None,
+                             star_kwargs={}):
         """
-        Creates a noiseless simulated image for a given image centre and observation time.
+        Creates a noiseless simulated image for a given image centre and
+        observation time.
 
         Parameters
         ----------
         centre : astropy.coordinates.SkyCoord or str
-            Sky coordinates of the image centre. Must be either a SkyCoord object or convertible
-            to one by the constructor of SkyCoord.
+            Sky coordinates of the image centre. Must be either a SkyCoord
+            object or convertible to one by the constructor of SkyCoord.
         obs_time : astropy.time.Time or str
-            Time of the obseration. This can be relevant when calculating the sky background
-            and source positions. Must be either a Time object or convertible to one by the
-            constructor of Time.
+            Time of the obseration. This can be relevant when calculating the
+            sky background and source positions. Must be either a Time object
+            or convertible to one by the constructor of Time.
         filter_name : str
             Name of the optical filter to use.
         stars : sequence, optional
             Sequence containing
+        centre_kwargs : dict (optional)
+            kwargs for centre kwargs to send to astropy.coordinates.SkyCoord(),
+            e.g. SkyCoord(centre, unit='deg')
+        star_kwargs : dict (optional)
+            kwargs for star kwargs to send to astropy.coordinates.SkyCoord(),
+            e.g. SkyCoord(coords, unit='deg')
 
         Returns
         -------
@@ -1561,18 +1589,19 @@ class Imager:
         """
         electrons = np.zeros((self.wcs._naxis2,
                               self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
+        self.set_WCS_centre(centre, **centre_kwargs)
 
         # Calculate observed sky background
         sky_rate = self.sky_rate[filter_name]
         if hasattr(self.sky, 'relative_brightness'):
-            pixel_coords = self.get_pixel_coords(centre)
+            pixel_coords = self.get_pixel_coords()
             relative_sky = self.sky.relative_brightness(pixel_coords, obs_time)
             sky_rate = sky_rate * relative_sky
         electrons = electrons + sky_rate
 
         if stars is not None:
             for (coords, magnitude) in stars:
-                coords = SkyCoord(coords)
+                coords = SkyCoord(coords, **star_kwargs)
                 pixel_coords = self.wcs.all_world2pix(((coords.ra.degree, coords.dec.degree),), 0) \
                     - self.wcs.wcs.crpix
                 star_rate = self.ABmag_to_rate(magnitude, filter_name)
