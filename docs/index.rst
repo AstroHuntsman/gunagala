@@ -129,6 +129,7 @@ Reference/API
   :skip: SkyCoord
   :skip: CCDData
   :skip: interp1d
+  :skip: InvalidTransformError
   :no-inheritance-diagram:
 
 .. automodapi:: gunagala.optic
