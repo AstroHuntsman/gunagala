@@ -120,31 +120,25 @@ def test_pixellated_square(psf, image_size):
 
 
 @pytest.mark.parametrize("psf, image_size", [
-    (psf_moffat(), (21, 21)),
-    (psf_pixellated(), (21, 21)),
     (psf_moffat(), (7, 9)),
-    (psf_pixellated(), (7, 9))]
-)
-def test_pixellated_rectangle(psf, image_size):
-    assert isinstance(psf.pixellated(), np.ndarray)
-    assert isinstance(psf.pixellated(size=(
-        image_size[0] + 0.2, image_size[1] + 0.2)), np.ndarray)
-    assert psf.pixellated(size=(
-        image_size[0] + 0.2, image_size[1] + 0.2)).shape == image_size
-    assert (psf.pixellated(size=(
-        image_size[0] + 0.2, image_size[1] + 0.2)) >= 0).all()
-    assert np.isfinite(psf.pixellated(size=(
-        image_size[0] + 0.2, image_size[1] + 0.2))).all()
-
-
-@pytest.mark.parametrize("psf", [
-    (psf_moffat()),
-    (psf_pixellated())],
+    (psf_pixellated(), (7, 9))],
     ids=["moffat", "pixellated"]
 )
-def test_pixellated_offsets(psf):
-    assert isinstance(psf.pixellated(offsets=(0.3, -0.7)), np.ndarray)
-    assert psf.pixellated().shape == (21, 21)
+def test_pixellated_rectangle(psf, image_size):
+    assert isinstance(psf.pixellated(size=(7.2, 9.2)), np.ndarray)
+    assert psf.pixellated(size=(7.2, 9.2)).shape == image_size
+    assert (psf.pixellated(size=(7.2, 9.2)) >= 0).all()
+    assert np.isfinite(psf.pixellated(size=(7.2, 9.2))).all()
+
+
+@pytest.mark.parametrize("psf, image_size", [
+    (psf_moffat(), (21, 21)),
+    (psf_pixellated(), (21, 21))],
+    ids=["moffat", "pixellated"]
+)
+def test_pixellated_offsets(psf, image_size):
+    assert isinstance(psf.pixellated(), np.ndarray)
+    assert psf.pixellated().shape == image_size
     assert (psf.pixellated() >= 0).all()
     assert np.isfinite(psf.pixellated()).all()
 
