@@ -109,18 +109,6 @@ def test_shape(psf_moffat):
 
 @pytest.mark.parametrize("psf, image_size", [
     (psf_moffat(), (21, 21)),
-    (psf_pixellated(), (21, 21))],
-    ids=["moffat", "pixellated"]
-)
-def test_pixellated_square(psf, image_size):
-    assert isinstance(psf.pixellated(), np.ndarray)
-    assert psf.pixellated().shape == image_size
-    assert (psf.pixellated() >= 0).all()
-    assert np.isfinite(psf.pixellated()).all()
-
-
-@pytest.mark.parametrize("psf, image_size", [
-    (psf_moffat(), (21, 21)),
     (psf_pixellated(), (21, 21)),
     (psf_moffat(), (7, 9)),
     (psf_pixellated(), (7, 9))]
