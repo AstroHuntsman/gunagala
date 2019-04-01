@@ -288,15 +288,15 @@ class Filter:
             red_half_max_a = (wave1 + wave2) / 2
             red_half_max_b = wave2 + (wave2 - wave1)
 
-        peak_results = minimize_scalar(lambda x: -self.transmission(x).value,
-                                       method='Bounded',
-                                       bounds=(blue_half_max_a.value, red_half_max_b.value))
+            peak_results = minimize_scalar(lambda x: -self.transmission(x).value,
+                                           method='Bounded',
+                                           bounds=(blue_half_max_a.value, red_half_max_b.value))
 
-        if not peak_results.success:
-            raise RuntimeError("Failed to find peak of filter transmission profile!")
+            if not peak_results.success:
+                raise RuntimeError("Failed to find peak of filter transmission profile!")
 
-        self._lambda_peak = peak_results.x * u.nm
-        self._peak = self.transmission(self._lambda_peak)
+            self._lambda_peak = peak_results.x * u.nm
+            self._peak = self.transmission(self._lambda_peak)
 
         blue_half_max_results = brentq(lambda x: self.transmission(x).value - self._peak.value  / 2,
                                        blue_half_max_a.value,
