@@ -67,7 +67,7 @@ def test_n_pix(psf):
 
 
 def test_n_pix_pix(pix_psf):
-    assert pix_psf.n_pix / u.pixel == pytest.approx(21.01351017)
+    assert pix_psf.n_pix.to(u.pixel).value == pytest.approx(21.01351017)
 
 
 def test_peak(psf):
@@ -75,7 +75,7 @@ def test_peak(psf):
 
 
 def test_peak_pix(pix_psf):
-    assert pix_psf.peak * u.pixel == pytest.approx(0.08073066)
+    assert pix_psf.peak.to(u.pixel).value == pytest.approx(0.08073066)
 
 
 def test_shape(psf):
