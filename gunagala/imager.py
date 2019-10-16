@@ -72,7 +72,7 @@ def create_imagers(config=None):
 
             # Put in cache
             optics[optic_name] = optic
-            camera_name = imager_info['camera']
+        camera_name = imager_info['camera']
         try:
             # Try to get from cache
             camera = cameras[camera_name]
