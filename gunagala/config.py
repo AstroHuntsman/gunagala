@@ -54,10 +54,9 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
     if config_files is None:
         config_files = ['pocs']
     config_files = listify(config_files)
-
     config = dict()
 
-    config_dir = 'data'
+    config_dir = os.path.join(os.path.dirname(__file__), 'data')
 
     for f in config_files:
         if not f.endswith('.yaml'):
@@ -76,6 +75,9 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
         # Load local version of config
         if not ignore_local:
             local_version = os.path.join(config_dir, f.replace('.', '_local.'))
+            if not local_version.startswith('/'):
+                local_version = get_pkg_data_filename(local_version)
+
             if os.path.exists(local_version):
                 try:
                     _add_to_conf(config, local_version)
