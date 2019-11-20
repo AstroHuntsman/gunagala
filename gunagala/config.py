@@ -56,7 +56,7 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
     config_files = listify(config_files)
     config = dict()
 
-    config_dir = 'data'
+    config_dir = os.path.join(os.path.dirname(__file__), 'data')
 
     for f in config_files:
         if not f.endswith('.yaml'):
