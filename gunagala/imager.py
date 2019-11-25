@@ -1670,7 +1670,7 @@ class Imager:
         data = data.astype('uint16')
         # Data type conversion strips units so need to put them back manually
         image = CCDData(data, wcs=noiseless.wcs, unit=u.adu)
-        image.header['EXPTIME'] = exp_time
+        image.header['EXPTIME'] = exp_time.value
         image.header['DARKSUB'] = subtract_dark
 
         return image
