@@ -20,7 +20,7 @@ from astropy.nddata import CCDData
 from gunagala.optic import Optic
 from gunagala.optical_filter import Filter
 from gunagala.camera import Camera
-from gunagala.psf import PSF, MoffatPSF
+from gunagala.psf import PSF, MoffatPSF, FittablePSF
 from gunagala.sky import Sky, Simple, ZodiacalLight
 from gunagala.config import load_config
 from gunagala.utils import ensure_unit
@@ -1603,6 +1603,10 @@ class Imager:
         noiseless : astropy.nddata.CDDData
             Noiseless image in the form of a CCDData object.
         """
+
+        if isinstance(self.psf, FittablePSF):
+            raise NotImplementedError("Analytical PSFs currently don't work.\n They will take all system memory. See: https://github.com/AstroHuntsman/gunagala/pull/16#issuecomment-426844974 ")
+
         electrons = np.zeros((self.wcs._naxis2,
                               self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
         self.set_WCS_centre(centre, **centre_kwargs)
