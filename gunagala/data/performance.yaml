@@ -229,6 +229,14 @@ psfs:
 
 
 skys:
+    daytime: # Lee made this up using wikipedia
+        model: Simple
+        surface_brightness:  # AB mag 'per square arcsecond'
+            g: 3.8
+            r: 2.8
+            Ha_3nm: 21.1
+            Ha_5nm: 21.1
+
     CTIO_0day: # From DECam ETC v7, 0 day Moon
         model: Simple
         surface_brightness:  # AB mag 'per square arcsecond'
@@ -325,5 +333,62 @@ imagers:
             - ase_nb858
         psf: 2as
         sky: ZL
+        num_imagers: 1
+        num_per_computer: 1
+
+
+    one_zwo_rasa36cm:
+        optic: rasa36cm
+        camera: zwo_asi183mm_T-15_G200
+        filters:
+            - g
+            - r
+        psf: 2as
+        sky: CTIO_0day
+        num_imagers: 1
+        num_per_computer: 1
+
+    one_zwo_canon_full_moon:
+        optic: canon
+        camera: zwo_asi183mm_T-15_G200
+        filters:
+            - g
+            - r
+        psf: 2as
+        sky: CTIO_14day
+        num_imagers: 1
+        num_per_computer: 1
+
+    one_zwo_canon_nosky:
+        optic: canon
+        camera: zwo_asi183mm_T-15_G200
+        filters:
+            - g
+            - r
+        psf: 2as
+        sky: no_sky
+        num_imagers: 1
+        num_per_computer: 1
+
+    one_zwo_canon_daytime:
+        optic: canon
+        camera: zwo_asi183mm_T-15_G200
+        filters:
+            - g
+            - r
+        psf: 2as
+        sky: daytime
+        num_imagers: 1
+        num_per_computer: 1
+
+
+    one_zwo_canon:
+        optic: canon
+        camera: zwo_asi183mm_T-15_G200
+        filters:
+            - g
+            - r
+        psf: 2as
+        sky: CTIO_0day
         num_imagers: 1
         num_per_computer: 1
