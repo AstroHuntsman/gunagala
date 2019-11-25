@@ -47,7 +47,7 @@ cameras:
         QE: ML50100_QE.csv
         minimum_exposure: 3 # second (~0.1 s physically possible, but won't be flat due to iris shutter)
 
-    zwo: # ASI1600MM - Note: gain is variable & changes effective read noise, dynamic range. These are near max values.
+    zwo_asi1600mm: # ASI1600MM - Note: gain is variable & changes effective read noise, dynamic range. These are near max values.
         bit_depth: 12
         full_well: 20000 # electron / pixel
         gain: 2.75 # electron / ADU
@@ -57,7 +57,7 @@ cameras:
         resolution: 4656, 3520 # pixel
         read_noise: 2.5 # electron / pixel
         dark_current: 0.008 # electron / (second * pixel)
-        QE: ZWO_QE.csv
+        QE: ZWO_QE_asi1600.csv
         minimum_exposure: 0.000032 # second
 
     cis115: # e2v CIS115 'Sirius' back side illuminated CMOS image sensor
@@ -72,6 +72,32 @@ cameras:
         dark_current: 0.04 # electron / pixel / s. Extrapolation to -40C from Wang et al 2014 model.
         QE: cis115_QE_-40C.csv # From Soman et al 2014
         minimum_exposure: 0.1333 # second. Continuous 'rolling shutter' mode for full drame. ROI could be quicker.
+
+    zwo_asi183mm_T-15_G150: # ASI183MM - Note: gain is variable & changes effective read noise, dynamic range. These are near max values.
+        bit_depth: 12
+        full_well: 2771.8 # electron / pixel
+        gain: 0.6806 # electron / ADU
+        bias:  38.0 # ADU / pixel
+        readout_time: 0.068 # second (~15fps)
+        pixel_size: 2.4 # micron / pixel
+        resolution: 5496, 3672 # pixel
+        read_noise: 1.7467 # electron / pixel
+        dark_current: 0.00214579046 # electron / (second * pixel)
+        QE: ZWO_ASI183MM_QE.csv
+        minimum_exposure: 0.000032 # second
+
+    zwo_asi183mm_T-15_G200: # ASI183MM - Note: gain is variable & changes effective read noise, dynamic range. These are near max values.
+        bit_depth: 12
+        full_well: 1567.1 # electron / pixel
+        gain: 0.3925 # electron / ADU
+        bias: 43.0 # ADU / pixel
+        readout_time: 0.068 # second (~15fps)
+        pixel_size: 2.4 # micron / pixel
+        resolution: 5496, 3672 # pixel
+        read_noise: 1.5294 # electron / pixel
+        dark_current: 0.0030166666 # electron / (second * pixel)
+        QE: ZWO_ASI183MM_QE.csv
+        minimum_exposure: 0.000032 # second
 
 filters:
     g:
