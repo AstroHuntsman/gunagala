@@ -6,22 +6,25 @@ import os
 
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.stats import poisson, norm
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 from astropy import constants as c
 from astropy import units as u
-from astropy.table import Table
-from astropy.wcs import WCS
+from astropy.wcs import WCS, InvalidTransformError
+from astropy.coordinates import SkyCoord
+from astropy.nddata import CCDData
 
 from gunagala.optic import Optic
 from gunagala.optical_filter import Filter
 from gunagala.camera import Camera
-from gunagala.psf import PSF, MoffatPSF
+from gunagala.psf import PSF, MoffatPSF, FittablePSF
 from gunagala.sky import Sky, Simple, ZodiacalLight
 from gunagala.config import load_config
 from gunagala.utils import ensure_unit
+
 
 def create_imagers(config=None):
     """
@@ -205,6 +208,7 @@ class Imager:
         Detected electrons/s/pixel due to the sky background for each
         filter bandpass.
     """
+
     def __init__(self, optic, camera, filters, psf, sky, num_imagers=1, num_per_computer=1):
 
         if not isinstance(optic, Optic):
@@ -246,13 +250,13 @@ class Imager:
 
         # Construct a simple template WCS to store the focal plane configuration parameters
         self.wcs = WCS(naxis=2)
-        self.wcs._naxis1 = self.camera.resolution[0].value
-        self.wcs._naxis2 = self.camera.resolution[1].value
-        self.wcs.wcs.crpix = [(self.camera.resolution[0].value + 1)/2,
-                              (self.camera.resolution[1].value + 1)/2]
+        self.wcs._naxis2, self.wcs._naxis1 = self.camera.resolution.value.astype(int)
+        self.wcs.wcs.crpix = [(self.camera.resolution[1].value - 1) / 2,
+                              (self.camera.resolution[0].value - 1) / 2]
         self.wcs.wcs.cdelt = [self.pixel_scale.to(u.degree / u.pixel).value,
                               self.pixel_scale.to(u.degree / u.pixel).value]
         self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+        self.wcs.wcs.crval = [None, None]
 
         # Calculate end to end efficiencies, etc.
         self._efficiencies()
@@ -268,7 +272,8 @@ class Imager:
 
                 # Work out what *sort* of surface brightness we got and do something appropriate
                 try:
-                    surface_brightness = surface_brightness.to(u.photon / (u.second * u.m**2 * u.arcsecond**2 * u.nm))
+                    surface_brightness = surface_brightness.to(
+                        u.photon / (u.second * u.m**2 * u.arcsecond**2 * u.nm))
                 except u.UnitConversionError:
                     raise ValueError("I don't know what to do with this!")
                 else:
@@ -281,6 +286,27 @@ class Imager:
             else:
                 # Not a callable, should be a Simple sky model which just returns AB magnitudes per square arcsecond
                 self.sky_rate[filter_name] = self.SB_to_rate(sb, filter_name)
+
+    def set_WCS_centre(self, centre, *args, **kwargs):
+        """
+        Set the WCS CRVALs of the Imager instance to centre.
+
+        Parameters
+        ----------
+        centre : astropy.coordinates.SkyCoord or str
+            Sky coordinates of the image centre. Must be either a SkyCoord object or convertible
+            to one by the constructor of SkyCoord.
+        unit : str (optional)
+            Unit is the same as for the astropy.coordinates.SkyCoord(), e.g.
+            SkyCoord(RAdec[0], RAdec[1], unit='deg')
+        """
+
+        # Ensure centre is a SkyCoord (this allows entering centre as a string)
+        if not isinstance(centre, SkyCoord):
+            centre = SkyCoord(centre, **kwargs)
+
+        # Set field centre coordinates in internal WCS
+        self.wcs.wcs.crval = [centre.icrs.ra.value, centre.icrs.dec.value]
 
     def extended_source_signal_noise(self, surface_brightness, filter_name, total_exp_time, sub_exp_time,
                                      calc_type='per pixel', saturation_check=True, binning=1):
@@ -334,7 +360,8 @@ class Imager:
             raise ValueError("Invalid calculation type '{}'!".format(calc_type))
 
         if calc_type == 'per arcsecond squared' and binning != 1:
-            raise ValueError("Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
+            raise ValueError(
+                "Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
 
         if surface_brightness:
             # Given a source brightness
@@ -378,11 +405,13 @@ class Imager:
         # Noise sources (per pixel for single imager)
         signal = (rate * total_exp_time).to(u.electron / u.pixel)
         # If calculating the signal & noise for the sky itself need to avoid double counting it here
-        sky_counts = self.sky_rate[filter_name] * total_exp_time if surface_brightness else 0 * u.electron / u.pixel
+        sky_counts = self.sky_rate[filter_name] * \
+            total_exp_time if surface_brightness else 0 * u.electron / u.pixel
         dark_counts = self.camera.dark_current * total_exp_time
         total_read_noise = number_subs**0.5 * self.camera.read_noise
 
-        noise = ((signal + sky_counts + dark_counts) * (u.electron / u.pixel) + total_read_noise**2)**0.5
+        noise = ((signal + sky_counts + dark_counts) *
+                 (u.electron / u.pixel) + total_read_noise**2)**0.5
         noise = noise.to(u.electron / u.pixel)
 
         # Saturation check
@@ -391,7 +420,8 @@ class Imager:
                 saturated = self._is_saturated(rate, sub_exp_time, filter_name)
             else:
                 # Sky counts already included in _is_saturated, need to avoid counting them twice
-                saturated = self._is_saturated(0 * u.electron / (u.pixel * u.second), sub_exp_time, filter_name)
+                saturated = self._is_saturated(
+                    0 * u.electron / (u.pixel * u.second), sub_exp_time, filter_name)
             # np.where strips units, need to manually put them back.
             signal = np.where(saturated, 0, signal) * u.electron / u.pixel
             noise = np.where(saturated, 0, noise) * u.electron / u.pixel
@@ -509,7 +539,8 @@ class Imager:
             raise ValueError("Invalid calculation type '{}'!".format(calc_type))
 
         if calc_type == 'per arcsecond squared' and binning != 1:
-            raise ValueError("Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
+            raise ValueError(
+                "Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
 
         # Convert target SNR per array combined, binned pixel to SNR per unbinned pixel
         snr_target = ensure_unit(snr_target, u.dimensionless_unscaled)
@@ -543,12 +574,12 @@ class Imager:
             noise_squared_rate = ((rate +
                                    self.sky_rate[filter_name] +
                                    self.camera.dark_current) * (u.electron / u.pixel) +
-                                   self.camera.read_noise**2 / sub_exp_time)
+                                  self.camera.read_noise**2 / sub_exp_time)
         else:
             # Avoiding counting sky noise twice when the target is the sky background itself
             noise_squared_rate = ((rate +
                                    self.camera.dark_current) * (u.electron / u.pixel) +
-                                   self.camera.read_noise**2 / sub_exp_time)
+                                  self.camera.read_noise**2 / sub_exp_time)
 
         noise_squared_rate = noise_squared_rate.to(u.electron**2 / (u.pixel**2 * u.second))
         total_exp_time = (snr_target**2 * noise_squared_rate / rate**2).to(u.second)
@@ -564,7 +595,8 @@ class Imager:
                 saturated = self._is_saturated(rate, sub_exp_time, filter_name)
             else:
                 # Sky counts already included in _is_saturated, need to avoid counting them twice
-                saturated = self._is_saturated(0 * u.electron / (u.pixel * u.second), sub_exp_time, filter_name)
+                saturated = self._is_saturated(
+                    0 * u.electron / (u.pixel * u.second), sub_exp_time, filter_name)
 
             number_subs = np.where(saturated, 0, number_subs)
 
@@ -615,7 +647,8 @@ class Imager:
             raise ValueError("Invalid calculation type '{}'!".format(calc_type))
 
         if calc_type == 'per arcsecond squared' and binning != 1:
-            raise ValueError("Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
+            raise ValueError(
+                "Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
 
         # Convert target SNR per array combined, binned pixel to SNR per unbinned pixel
         snr_target = ensure_unit(snr_target, u.dimensionless_unscaled)
@@ -635,8 +668,10 @@ class Imager:
         total_exp_time = number_subs * sub_exp_time
 
         # Noise sources
-        sky_counts = self.sky_rate[filter_name] * total_exp_time if enable_sky_noise else 0.0 * u.electron / u.pixel
-        dark_counts = self.camera.dark_current * total_exp_time if enable_dark_noise else 0.0 * u.electron / u.pixel
+        sky_counts = self.sky_rate[filter_name] * \
+            total_exp_time if enable_sky_noise else 0.0 * u.electron / u.pixel
+        dark_counts = self.camera.dark_current * \
+            total_exp_time if enable_dark_noise else 0.0 * u.electron / u.pixel
         total_read_noise = number_subs**0.5 * \
             self.camera.read_noise if enable_read_noise else 0.0 * u.electron / u.pixel
 
@@ -645,7 +680,8 @@ class Imager:
 
         # Calculate science count rate for target signal to noise ratio
         a = total_exp_time**2
-        b = -snr_target**2 * total_exp_time * u.electron / u.pixel  # Units come from converting signal counts to noise
+        # Units come from converting signal counts to noise
+        b = -snr_target**2 * total_exp_time * u.electron / u.pixel
         c = -snr_target**2 * noise_squared
 
         rate = (-b + (b**2 - 4 * a * c)**0.5) / (2 * a)
@@ -837,7 +873,7 @@ class Imager:
 
         # First convert from total flux to spectral flux densitity per
         # unit wavelength, using the pre-caluclated integral.
-        f_nu = flux  * u.electron / (self._iminus2[filter_name] * c.c * u.photon)
+        f_nu = flux * u.electron / (self._iminus2[filter_name] * c.c * u.photon)
 
         # Then convert spectral flux density to magnitudes
         return f_nu.to(u.ABmag,
@@ -866,7 +902,8 @@ class Imager:
         total_elapsed_time = ensure_unit(total_elapsed_time, u.second)
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
 
-        num_of_subs = np.floor(total_elapsed_time / (sub_exp_time + self.camera.readout_time * self.num_per_computer))
+        num_of_subs = np.floor(total_elapsed_time / (sub_exp_time +
+                                                     self.camera.readout_time * self.num_per_computer))
         total_exposure_time = num_of_subs * sub_exp_time
         return total_exposure_time
 
@@ -1315,14 +1352,16 @@ class Imager:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
 
         if bool(bright_limit) == bool(shortest_exp_time):
-            raise ValueError("One and only one of bright_limit and shortest_exp_time must be specified!")
+            raise ValueError(
+                "One and only one of bright_limit and shortest_exp_time must be specified!")
 
         if bool(faint_limit) == bool(num_long_exp):
             raise ValueError("one and only one of faint_limit and num_long_exp must be specified!")
 
         longest_exp_time = ensure_unit(longest_exp_time, u.second)
         if longest_exp_time < self.camera.minimum_exposure:
-            raise ValueError("Longest exposure time shorter than minimum exposure time of the camera!")
+            raise ValueError(
+                "Longest exposure time shorter than minimum exposure time of the camera!")
 
         if bright_limit:
             # First calculate exposure time that will just saturate on the brightest sources.
@@ -1346,7 +1385,8 @@ class Imager:
 
         # Round down the shortest exposure time so that it is a exp_time_ratio^integer multiple of the longest
         # exposure time
-        num_exp_times = int(math.ceil(math.log(longest_exp_time / shortest_exp_time, exp_time_ratio)))
+        num_exp_times = int(
+            math.ceil(math.log(longest_exp_time / shortest_exp_time, exp_time_ratio)))
         shortest_exp_time = (longest_exp_time / (exp_time_ratio ** num_exp_times))
 
         # Ensuring the shortest exposure time is not lower than the minimum exposure time of the cameras
@@ -1357,7 +1397,8 @@ class Imager:
 
         # Creating a list of exposure times from the shortest exposure time to the one directly below the
         # longest exposure time
-        exp_times = [shortest_exp_time.to(u.second) * exp_time_ratio**i for i in range(num_exp_times)]
+        exp_times = [shortest_exp_time.to(u.second) * exp_time_ratio **
+                     i for i in range(num_exp_times)]
 
         if faint_limit:
             num_long_exp = 0
@@ -1510,15 +1551,141 @@ class Imager:
 
         return magnitudes.to(u.ABmag), snrs.to(u.dimensionless_unscaled)
 
+    def get_pixel_coords(self):
+        """
+        Utility function to return a SkyCoord array containing the on sky position
+        of the centre of all the pixels in the image.
+        """
+        # Arrays of pixel coordinates
+        XY = np.meshgrid(np.arange(self.wcs._naxis1), np.arange(self.wcs._naxis2))
+
+        # Convert to arrays of RA, dec (ICRS, decimal degrees)
+        try:
+            RAdec = self.wcs.all_pix2world(XY[0], XY[1], 0)
+        except InvalidTransformError:
+            raise ValueError("CRVAL not set! Must call set_WCS_centre before get_pixel_coords")
+
+        return SkyCoord(RAdec[0], RAdec[1], unit='deg')
+
+    def make_noiseless_image(self,
+                             centre,
+                             obs_time,
+                             filter_name,
+                             centre_kwargs={},
+                             stars=None,
+                             star_kwargs={}):
+        """
+        Creates a noiseless simulated image for a given image centre and
+        observation time.
+
+        Parameters
+        ----------
+        centre : astropy.coordinates.SkyCoord or str
+            Sky coordinates of the image centre. Must be either a SkyCoord
+            object or convertible to one by the constructor of SkyCoord.
+        obs_time : astropy.time.Time or str
+            Time of the obseration. This can be relevant when calculating the
+            sky background and source positions. Must be either a Time object
+            or convertible to one by the constructor of Time.
+        filter_name : str
+            Name of the optical filter to use.
+        stars : sequence, optional
+            Sequence containing
+        centre_kwargs : dict (optional)
+            kwargs for centre kwargs to send to astropy.coordinates.SkyCoord(),
+            e.g. SkyCoord(centre, unit='deg')
+        star_kwargs : dict (optional)
+            kwargs for star kwargs to send to astropy.coordinates.SkyCoord(),
+            e.g. SkyCoord(coords, unit='deg')
+
+        Returns
+        -------
+        noiseless : astropy.nddata.CDDData
+            Noiseless image in the form of a CCDData object.
+        """
+
+        if isinstance(self.psf, FittablePSF):
+            raise NotImplementedError("Analytical PSFs currently don't work.\n They will take all system memory. See: https://github.com/AstroHuntsman/gunagala/pull/16#issuecomment-426844974 ")
+
+        electrons = np.zeros((self.wcs._naxis2,
+                              self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
+        self.set_WCS_centre(centre, **centre_kwargs)
+
+        # Calculate observed sky background
+        sky_rate = self.sky_rate[filter_name]
+        if hasattr(self.sky, 'relative_brightness'):
+            pixel_coords = self.get_pixel_coords()
+            relative_sky = self.sky.relative_brightness(pixel_coords, obs_time)
+            sky_rate = sky_rate * relative_sky
+        electrons = electrons + sky_rate
+
+        if stars is not None:
+            for (coords, magnitude) in stars:
+                coords = SkyCoord(coords, **star_kwargs)
+                pixel_coords = self.wcs.all_world2pix(((coords.ra.degree, coords.dec.degree),), 0) \
+                    - self.wcs.wcs.crpix
+                star_rate = self.ABmag_to_rate(magnitude, filter_name)
+                star_image = star_rate * self.psf.pixellated(size=self.camera.resolution / u.pixel,
+                                                             offsets=pixel_coords[0]) / u.pixel
+                electrons = electrons + star_image
+
+        noiseless = CCDData(electrons, wcs=self.wcs)
+
+        return noiseless
+
+    def make_image_real(self, noiseless, exp_time, subtract_dark=False):
+        """
+        Given a noiseless simulated image in electrons per pixel add dark current,
+        Poisson noise and read noise, and convert to ADU using the predefined gain.
+        """
+        # Scale photoelectron rates by exposure time
+        data = noiseless.data * noiseless.unit * exp_time
+        # Add dark current
+        if self.camera.dark_frame is None:
+            data += self.camera.dark_current * exp_time
+        else:
+            data += self.camera.dark_frame * exp_time
+        # Force to electron units
+        data = (data * u.pixel).to(u.electron)
+        # Apply Poisson noise. This is not unit-aware, need to restore them manually
+        data = (poisson.rvs(data / u.electron)).astype('float64') * u.electron
+        # Apply read noise. Again need to restore units manually
+        data += norm.rvs(scale=self.camera.read_noise / (u.electron * u.pixel),
+                         size=data.shape) * u.electron
+        # Optionally subtract a Perfect Dark
+        if subtract_dark:
+            if self.camera.dark_frame is None:
+                data -= self.camera.dark_current * exp_time * u.pixel
+            else:
+                data -= self.camera.dark_frame * exp_time * u.pixel
+        # Convert to ADU
+        data /= self.camera.gain
+        # Force to adu (just here to catch unit problems)
+        data = data.to(u.adu)
+        # 'Analogue to digital conversion'
+        data += self.camera.bias * u.pixel
+        data = np.where(data < 2**self.camera.bit_depth * u.adu,
+                        data,
+                        (2**self.camera.bit_depth - 1) * u.adu)
+        data = data.astype('uint16')
+        # Data type conversion strips units so need to put them back manually
+        image = CCDData(data, wcs=noiseless.wcs, unit=u.adu)
+        image.header['EXPTIME'] = exp_time.value
+        image.header['DARKSUB'] = subtract_dark
+
+        return image
+
     def _is_saturated(self, rate, sub_exp_time, filter_name, n_sigma=3.0):
         # Total electrons per pixel from source, sky and dark current
-        electrons_per_pixel = (rate + self.sky_rate[filter_name] + self.camera.dark_current) * sub_exp_time
+        electrons_per_pixel = (
+            rate + self.sky_rate[filter_name] + self.camera.dark_current) * sub_exp_time
         # Consider saturated if electrons per pixel is closer than n sigmas of noise to the saturation level
         return electrons_per_pixel > self.camera.saturation_level - n_sigma * self.camera.max_noise
 
     def _efficiencies(self):
         # Fine wavelength grid spaning maximum range of instrument response
-        waves = np.arange(self.camera.wavelengths.value.min(), self.camera.wavelengths.value.max(), 0.05) * u.nm
+        waves = np.arange(self.camera.wavelengths.value.min(),
+                          self.camera.wavelengths.value.max(), 0.05) * u.nm
         self.wavelengths = waves
 
         # Sensitivity integrals for each filter bandpass
@@ -1536,8 +1703,10 @@ class Imager:
         self.bandwidth = {}
 
         # Interpolators for throughput and QE. Will move these into the Optics and Camera classes later.
-        tau = interp1d(self.optic.wavelengths, self.optic.throughput, kind='linear', fill_value='extrapolate')
-        qe = interp1d(self.camera.wavelengths, self.camera.QE, kind='linear', fill_value='extrapolate')
+        tau = interp1d(self.optic.wavelengths, self.optic.throughput,
+                       kind='linear', fill_value='extrapolate')
+        qe = interp1d(self.camera.wavelengths, self.camera.QE,
+                      kind='linear', fill_value='extrapolate')
 
         for name, band in self.filters.items():
             # End-to-end efficiency. Need to put units back after interpolation
@@ -1568,6 +1737,7 @@ class Imager:
         # Average photon energy
         energy = c.h * c.c / (self.pivot_wave * u.photon)
         # Divide by photon energy & multiply by aperture area, pixel area and bandwidth to get photons/s/pixel
-        photon_flux = (sfd_sb_0 / energy) * self.optic.aperture_area * self.pixel_area * self.bandwidth
+        photon_flux = (sfd_sb_0 / energy) * self.optic.aperture_area * \
+            self.pixel_area * self.bandwidth
 
         self.gamma0 = photon_flux.to(u.photon / (u.s * u.pixel))

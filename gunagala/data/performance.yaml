@@ -57,7 +57,7 @@ cameras:
         resolution: 4656, 3520 # pixel
         read_noise: 2.5 # electron / pixel
         dark_current: 0.008 # electron / (second * pixel)
-        QE: ZWO_QE.csv
+        QE: ZWO_QE_asi1600.csv
         minimum_exposure: 0.000032 # second
 
     cis115: # e2v CIS115 'Sirius' back side illuminated CMOS image sensor
