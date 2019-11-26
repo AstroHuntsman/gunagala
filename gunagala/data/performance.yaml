@@ -302,6 +302,13 @@ skys:
             Ha_3nm: 19.7
             Ha_5nm: 19.7
 
+    no_sky: 
+        model: Simple
+        surface_brightness:  # AB mag 'per square arcsecond'
+            g: 99.
+            r: 99.
+            Ha_3nm: 99.
+            Ha_5nm: 99.
     ZL:
         model: ZodiacalLight
 
