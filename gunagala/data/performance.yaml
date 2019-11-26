@@ -10,6 +10,18 @@ optics:
         throughput: rasa_tau.csv
         central_obstruction: 129.0 # millimetres
 
+    rasa36cm: #Celestron RASA
+        aperture: 360.0 # millimetres
+        focal_length: 790.0 # millimetres
+        throughput: rasa_tau.csv
+        central_obstruction: 129.0 # millimetres
+
+    aat: #AAT wikipedia
+        aperture: 3900.0 # millimetres
+        focal_length: 12700.0 # millimetres
+        throughput: rasa_tau.csv
+        central_obstruction: 129.0 # millimetres
+
     ase90: # Australian Space Eye nominal 90 mm diameter telescope
         aperture: 90.0 # millimtres
         focal_length: 481.0 # millimetres
@@ -46,6 +58,19 @@ cameras:
         dark_current: 0.015 # electron / (second * pixel)
         QE: ML50100_QE.csv
         minimum_exposure: 3 # second (~0.1 s physically possible, but won't be flat due to iris shutter)
+
+    fli_kl2020_BI: # fli_kl2020_BI
+        bit_depth: 12
+        full_well: 54000 # electrons
+        gain: 5.0 # electron / ADU
+        bias: 100 # ADU / pixel
+        readout_time: 10.26e-6 # second
+        pixel_size: 6.5 # micron / pixel
+        resolution: 2048, 2048 # pixel
+        read_noise: 1.6  # electron / pixel
+        dark_current: 0.2 # electron / (second * pixel)
+        QE: fli_kepler_back_illluminated_QE.csv
+        minimum_exposure: 0.000032 # second (~0.1 s physically possible, but won't be flat due to iris shutter)
 
     zwo_asi1600mm: # ASI1600MM - Note: gain is variable & changes effective read noise, dynamic range. These are near max values.
         bit_depth: 12
