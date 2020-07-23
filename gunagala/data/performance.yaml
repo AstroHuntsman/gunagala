@@ -47,7 +47,7 @@ cameras:
         QE: ML50100_QE.csv
         minimum_exposure: 3 # second (~0.1 s physically possible, but won't be flat due to iris shutter)
 
-    zwo: # ASI1600MM - Note: gain is variable & changes effective read noise, dynamic range. These are near max values.
+    zwo_1600: # ASI1600MM - Note: gain is variable & changes effective read noise, dynamic range. These are near max values.
         bit_depth: 12
         full_well: 20000 # electron / pixel
         gain: 2.75 # electron / ADU
@@ -59,6 +59,19 @@ cameras:
         dark_current: 0.008 # electron / (second * pixel)
         QE: ZWO_QE_asi1600.csv
         minimum_exposure: 0.000032 # second
+
+    zwo_183: # ASI183MM
+        bit_depth: 12
+        full_well: 1.5E+3 # electron / pixel
+        gain: 0.6806 # electron / ADU
+        bias: 38 # ADU / pixel
+        readout_time: 0.068 # second (~15fps)
+        pixel_size: 2.4 # micron / pixel
+        resolution: 5496, 3672 # pixel
+        read_noise: 2 # electron / pixel
+        dark_current: 0.00215 # electron / (second * pixel)
+        QE: ZWO_ASI183MM_QE.csv
+        minimum_exposure: 32E-6 # second
 
     cis115: # e2v CIS115 'Sirius' back side illuminated CMOS image sensor
         bit_depth: 16
@@ -200,6 +213,10 @@ psfs:
         model: MoffatPSF
         FWHM: 2 # arcsecond
         shape: 4.5
+    zwo_183:
+        model: MoffatPSF
+        FWHM: 1.58 # arcsecond
+        shape: 4.5
 
 
 skys:
@@ -301,3 +318,14 @@ imagers:
         sky: ZL
         num_imagers: 1
         num_per_computer: 1
+
+    canon_zwo183_dark:
+        optic: canon
+        camera: zwo_183
+        filters:
+            - g
+            - r
+        psf: zwo_183
+        sky: CTIO_0day
+        num_imagers: 10
+        num_per_computer: 10
