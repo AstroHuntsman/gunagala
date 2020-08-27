@@ -1,5 +1,6 @@
 # Tests for the signal-to-noise module
 import pytest
+from pytest import approx
 import numpy as np
 import astropy.units as u
 import astropy.constants as c
@@ -336,11 +337,11 @@ def test_extended_rates(imager, filter_name):
                                                saturation_check=True)
 
     # Calculating surface brightness given exposure time and SNR should match original surface brightness
-    assert imager.rate_to_SB(rate, filter_name) == imager.extended_source_limit(total_exp_time=t_exp,
+    assert approx(imager.rate_to_SB(rate, filter_name).value) == imager.extended_source_limit(total_exp_time=t_exp,
                                                                                 filter_name=filter_name,
                                                                                 snr_target=snr,
                                                                                 sub_exp_time=t_sub,
-                                                                                calc_type='per arcsecond squared')
+                                                                                calc_type='per arcsecond squared').value
 
     # Can't use pixel binning with per arcsecond squared signal, noise values
     with pytest.raises(ValueError):
