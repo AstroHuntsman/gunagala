@@ -1557,7 +1557,8 @@ class Imager:
         of the centre of all the pixels in the image.
         """
         # Arrays of pixel coordinates
-        XY = np.meshgrid(np.arange(self.wcs._naxis1), np.arange(self.wcs._naxis2))
+        naxis1, naxis2 = self.wcs.pixel_shape
+        XY = np.meshgrid(np.arange(naxis1), np.arange(naxis2))
 
         # Convert to arrays of RA, dec (ICRS, decimal degrees)
         try:
@@ -1607,8 +1608,8 @@ class Imager:
         if isinstance(self.psf, FittablePSF):
             raise NotImplementedError("Analytical PSFs currently don't work.\n They will take all system memory. See: https://github.com/AstroHuntsman/gunagala/pull/16#issuecomment-426844974 ")
 
-        electrons = np.zeros((self.wcs._naxis2,
-                              self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
+        naxis1, naxis2 = self.wcs.pixel_shape
+        electrons = np.zeros((naxis2, naxis1)) * u.electron / (u.second * u.pixel)
         self.set_WCS_centre(centre, **centre_kwargs)
 
         # Calculate observed sky background
