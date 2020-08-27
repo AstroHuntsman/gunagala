@@ -7,12 +7,20 @@ from gunagala.psf import PSF, MoffatPSF, PixellatedPSF
 
 @pytest.fixture(scope='module')
 def psf_moffat():
+    return make_moffat()
+
+
+def make_moffat():
     psf = MoffatPSF(FWHM=1 / 30 * u.arcminute, shape=4.7)
     return psf
 
 
 @pytest.fixture(scope='module')
 def psf_pixellated():
+    return make_pixellated()
+
+
+def make_pixellated():
     psf_data = np.array([[0.0, 0.0, 0.1, 0.0, 0.0],
                          [0.0, 0.3, 0.7, 0.4, 0.0],
                          [0.1, 0.8, 1.0, 0.6, 0.1],
@@ -33,8 +41,8 @@ def test_base():
 
 
 @pytest.mark.parametrize("psf, type", [
-    (psf_moffat(), MoffatPSF),
-    (psf_pixellated(), PixellatedPSF)],
+    (make_moffat(), MoffatPSF),
+    (make_pixellated(), PixellatedPSF)],
     ids=["moffat", "pixellated"]
 )
 def test_instance(psf, type):
@@ -93,8 +101,8 @@ def test_shape(psf):
 
 
 @pytest.mark.parametrize("psf, t_pixel_scale, pixel_scale", [
-    (psf_moffat(), 2.85, 2.85),
-    (psf_pixellated(), (1 / 3), (2 / 3))],
+    (make_moffat(), 2.85, 2.85),
+    (make_pixellated(), (1 / 3), (2 / 3))],
     ids=["moffat", "pixellated"]
 )
 def test_pixel_scale(psf, t_pixel_scale, pixel_scale):
@@ -104,8 +112,8 @@ def test_pixel_scale(psf, t_pixel_scale, pixel_scale):
 
 
 @pytest.mark.parametrize("psf, expected_n_pix, pixel_scale", [
-    (psf_moffat(), 4.25754067000986, 2.85),
-    (psf_pixellated(), 21.06994544, (2 / 3))],
+    (make_moffat(), 4.25754067000986, 2.85),
+    (make_pixellated(), 21.06994544, (2 / 3))],
     ids=["moffat", "pixellated"]
 )
 def test_n_pix(psf, expected_n_pix, pixel_scale):
@@ -114,8 +122,8 @@ def test_n_pix(psf, expected_n_pix, pixel_scale):
 
 
 @pytest.mark.parametrize("psf, expected_peak, pixel_scale", [
-    (psf_moffat(), 0.7134084656751443, 2.85),
-    (psf_pixellated(), 0.08073066, (2 / 3))],
+    (make_moffat(), 0.7134084656751443, 2.85),
+    (make_pixellated(), 0.08073066, (2 / 3))],
     ids=["moffat", "pixellated"]
 )
 def test_peak(psf, expected_peak, pixel_scale):
@@ -133,10 +141,10 @@ def test_shape(psf_moffat):
 
 
 @pytest.mark.parametrize("psf, image_size", [
-    (psf_moffat(), (21, 21)),
-    (psf_pixellated(), (21, 21)),
-    (psf_moffat(), (7, 9)),
-    (psf_pixellated(), (7, 9))],
+    (make_moffat(), (21, 21)),
+    (make_pixellated(), (21, 21)),
+    (make_moffat(), (7, 9)),
+    (make_pixellated(), (7, 9))],
     ids=["moffat_square",
          "pixellated_square",
          "moffat_rectangle",
@@ -155,10 +163,10 @@ def test_pixellated_dimension(psf, image_size):
 
 
 @pytest.mark.parametrize("psf, offset", [
-    (psf_moffat(), (0.0, 0.0)),
-    (psf_pixellated(), (0.0, 0.0)),
-    (psf_moffat(), (0.3, -0.7)),
-    (psf_pixellated(), (0.3, -0.7))],
+    (make_moffat(), (0.0, 0.0)),
+    (make_pixellated(), (0.0, 0.0)),
+    (make_moffat(), (0.3, -0.7)),
+    (make_pixellated(), (0.3, -0.7))],
     ids=["moffat_centre_offsets",
          "pixellated_centre_offsets",
          "moffat_noncentre_offsets",
@@ -172,8 +180,8 @@ def test_offsets(psf, offset):
 
 
 @pytest.mark.parametrize("psf, test_size", [
-    (psf_moffat(), (1.3, -1.3)),
-    (psf_pixellated(), (-1.3, 1.3))],
+    (make_moffat(), (1.3, -1.3)),
+    (make_pixellated(), (-1.3, 1.3))],
     ids=["moffat", "pixellated"]
 )
 def test_pixellated_invalid_size(psf, test_size):
