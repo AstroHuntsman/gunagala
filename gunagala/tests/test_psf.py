@@ -97,7 +97,7 @@ def test_pixel_scale(psf, t_pixel_scale, pixel_scale):
     assert psf.pixel_scale == t_pixel_scale * u.arcsecond / u.pixel
     psf.pixel_scale = pixel_scale * u.arcsecond / u.pixel
 
-@pytest.mark.xfail
+
 @pytest.mark.parametrize("psf, expected_n_pix, pixel_scale", [
     (make_moffat(), 4.25754067000986, 2.85),
     (make_pixellated(), 21.06994544, (2 / 3))],

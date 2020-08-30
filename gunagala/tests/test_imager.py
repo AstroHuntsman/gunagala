@@ -611,7 +611,7 @@ def test_point_sat_exp(imager, filter_name):
 
     assert imager.point_source_saturation_mag(sub_exp_time=sat_exp, filter_name=filter_name) == b
 
-@pytest.mark.xfail
+
 def test_sequence(imager, filter_name):
     brightest = 10 * u.ABmag
     ratio = 2.0
