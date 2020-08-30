@@ -191,15 +191,15 @@ class FittablePSF(PSF, Fittable2DModel):
             PSF wings by the edge of the image.
         """
         size = tuple(int(s) for s in size)
-        if size[0] <= 0 or size[1] <= 0:
+        if size[0] <= 0 or size[1] <=0:
             raise ValueError("`size` must be > 0, got {}!".format(size))
 
         # Update PSF centre coordinates
         self.x_0 = offsets[1]
         self.y_0 = offsets[0]
 
-        xrange = (int(-(size[1] - 1) / 2), int((size[1] + 1) / 2))
-        yrange = (int(-(size[0] - 1) / 2), int((size[0] + 1) / 2))
+        xrange = (-(size[1] - 1) / 2, (size[1] + 1) / 2)
+        yrange = (-(size[0] - 1) / 2, (size[0] + 1) / 2)
 
         return discretize_model(self, xrange, yrange, mode='oversample', factor=10)
 
