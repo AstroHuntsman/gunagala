@@ -75,9 +75,9 @@ Running the test suite
 ----------------------
 
 After installing Gunagala it is recommended that you run the suite of units tests. This can be done
-at the command line using::
+at the command line using the `tox` automation command (install via `pip install tox`)::
 
-  $ python setup.py test
+  $ tox -e test
 
 .. highlight:: python3
 
