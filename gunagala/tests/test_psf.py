@@ -45,48 +45,48 @@ def test_instance(psf, type):
     assert isinstance(psf, PSF)
 
 
-def test_pix(pix_psf):
-    assert isinstance(pix_psf, PixellatedPSF)
-    assert isinstance(pix_psf, PSF)
+def test_pix(psf_pixellated):
+    assert isinstance(psf_pixellated, PixellatedPSF)
+    assert isinstance(psf_pixellated, PSF)
 
 
-def test_FWHM(psf):
-    assert psf.FWHM == 2 * u.arcsecond
-    psf.FWHM = 4 * u.arcsecond
-    assert psf.FWHM == 1 / 15 * u.arcminute
+def test_FWHM(psf_moffat):
+    assert psf_moffat.FWHM == 2 * u.arcsecond
+    psf_moffat.FWHM = 4 * u.arcsecond
+    assert psf_moffat.FWHM == 1 / 15 * u.arcminute
     with pytest.raises(ValueError):
-        psf.FWHM = -1 * u.degree
-    psf.FWHM = 2 * u.arcsecond
+        psf_moffat.FWHM = -1 * u.degree
+    psf_moffat.FWHM = 2 * u.arcsecond
 
 
-def test_pixel_scale(psf):
+def test_pixel_scale(psf_moffat):
     psf.pixel_scale = 2.85 * u.arcsecond / u.pixel
     assert psf.pixel_scale == 2.85 * u.arcsecond / u.pixel
 
 
-def test_pixel_scale_pix(pix_psf):
-    pix_psf.pixel_scale = (1 / 3) * u.arcsecond / u.pixel
-    assert pix_psf.pixel_scale == (1 / 3) * u.arcsecond / u.pixel
-    pix_psf.pixel_scale = (2 / 3) * u.arcsecond / u.pixel
+def test_pixel_scale_pix(psf_pixellated):
+    psf_pixellated.pixel_scale = (1 / 3) * u.arcsecond / u.pixel
+    assert psf_pixellated.pixel_scale == (1 / 3) * u.arcsecond / u.pixel
+    psf_pixellated.pixel_scale = (2 / 3) * u.arcsecond / u.pixel
 
 
-def test_n_pix(psf):
+def test_n_pix(psf_moffat):
     assert psf.n_pix == 4.25754067000986 * u.pixel
 
 
-def test_n_pix_pix(pix_psf):
-    assert pix_psf.n_pix.to(u.pixel).value == pytest.approx(21.01351017)
+def test_n_pix_pix(psf_pixellated):
+    assert psf_pixellated.n_pix.to(u.pixel).value == pytest.approx(21.01351017)
 
 
-def test_peak(psf):
+def test_peak(psf_moffat):
     assert psf.peak == 0.7134084656751443 / u.pixel
 
 
-def test_peak_pix(pix_psf):
-    assert pix_psf.peak.to(1 / u.pixel).value == pytest.approx(0.08073066)
+def test_peak_pix(psf_pixellated):
+    assert psf_pixellated.peak.to(1 / u.pixel).value == pytest.approx(0.08073066)
 
 
-def test_shape(psf):
+def test_shape(psf_moffat):
     assert psf.shape == 4.7
     psf.shape = 2.5
     assert psf.shape == 2.5
