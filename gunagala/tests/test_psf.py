@@ -32,7 +32,7 @@ def psf_pixellated():
 def test_base():
     with pytest.raises(TypeError):
         # Try to instantiate abstract base class, should fail
-        psf_base = PSF(FWHM=1 / 30 * u.arcminute)
+        _ = PSF(FWHM=1 / 30 * u.arcminute)
 
 
 @pytest.mark.parametrize("psf, type", [
@@ -87,9 +87,9 @@ def test_peak_pix(psf_pixellated):
 
 
 def test_shape(psf_moffat):
-    assert psf.shape == 4.7
-    psf.shape = 2.5
-    assert psf.shape == 2.5
+    assert psf_moffat.shape == 4.7
+    psf_moffat.shape = 2.5
+    assert psf_moffat.shape == 2.5
     with pytest.raises(ValueError):
         psf_moffat.FWHM = -1 * u.degree
     psf_moffat.FWHM = 2 * u.arcsecond
@@ -124,15 +124,6 @@ def test_n_pix(psf, expected_n_pix, pixel_scale):
 def test_peak(psf, expected_peak, pixel_scale):
     psf.pixel_scale = pixel_scale * u.arcsecond / u.pixel
     assert psf.peak.to(1 / (u.pixel)).value == pytest.approx(expected_peak)
-
-
-def test_shape(psf_moffat):
-    assert psf_moffat.shape == 4.7
-    psf_moffat.shape = 2.5
-    assert psf_moffat.shape == 2.5
-    with pytest.raises(ValueError):
-        psf_moffat.shape = 0.5
-    psf_moffat.shape = 4.7
 
 
 @pytest.mark.parametrize("psf, image_size", [

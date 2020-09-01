@@ -250,7 +250,7 @@ class Imager:
 
         # Construct a simple template WCS to store the focal plane configuration parameters
         self.wcs = WCS(naxis=2)
-        self.wcs._naxis2, self.wcs._naxis1 = self.camera.resolution.value.astype(int)
+        self.wcs.pixel_shape = self.camera.resolution.value.astype(int)
         self.wcs.wcs.crpix = [(self.camera.resolution[1].value - 1) / 2,
                               (self.camera.resolution[0].value - 1) / 2]
         self.wcs.wcs.cdelt = [self.pixel_scale.to(u.degree / u.pixel).value,
@@ -422,9 +422,8 @@ class Imager:
                 # Sky counts already included in _is_saturated, need to avoid counting them twice
                 saturated = self._is_saturated(
                     0 * u.electron / (u.pixel * u.second), sub_exp_time, filter_name)
-            # np.where strips units, need to manually put them back.
-            signal = np.where(saturated, 0, signal) * u.electron / u.pixel
-            noise = np.where(saturated, 0, noise) * u.electron / u.pixel
+            signal = np.where(saturated, 0 * u.electron / u.pixel, signal)
+            noise = np.where(saturated, 0 * u.electron / u.pixel, noise)
 
         # Totals per (binned) pixel for all imagers.
         signal = signal * self.num_imagers * binning
@@ -483,8 +482,7 @@ class Imager:
         signal, noise = self.extended_source_signal_noise(surface_brightness, filter_name, total_exp_time,
                                                           sub_exp_time, calc_type, saturation_check, binning)
 
-        # np.where() strips units, need to manually put them back
-        snr = np.where(noise != 0.0, signal / noise, 0.0) * u.dimensionless_unscaled
+        snr = np.where(noise != 0.0, signal / noise, 0.0 * u.dimensionless_unscaled)
 
         return snr
 
@@ -1003,9 +1001,8 @@ class Imager:
         # in a single sub exposure, and check against saturation_level.
         if saturation_check:
             saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time, filter_name)
-            # np.where strips units, need to manually put them back.
-            signal = np.where(saturated, 0.0, signal) * u.electron
-            noise = np.where(saturated, 0.0, noise) * u.electron
+            signal = np.where(saturated, 0.0 * u.electron, signal)
+            noise = np.where(saturated, 0.0 * u.electron , noise)
 
         return signal, noise
 
@@ -1046,8 +1043,7 @@ class Imager:
         signal, noise = self.point_source_signal_noise(brightness, filter_name,
                                                        total_exp_time, sub_exp_time, saturation_check)
 
-        # np.where() strips units, need to manually put them back.
-        snr = np.where(noise != 0.0, signal / noise, 0.0) * u.dimensionless_unscaled
+        snr = np.where(noise != 0.0, signal / noise, 0.0 * u.dimensionless_unscaled)
 
         return snr
 
@@ -1096,8 +1092,7 @@ class Imager:
         # in a single sub exposure, and check against saturation_level.
         if saturation_check:
             saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time, filter_name)
-            # np.where() strips units, need to manually put them back
-            total_exp_time = np.where(saturated, 0.0, total_exp_time) * u.second
+            total_exp_time = np.where(saturated, 0.0 * u.second, total_exp_time)
 
         return total_exp_time
 
@@ -1507,6 +1502,7 @@ class Imager:
                                                                  filter_name=filter_name,
                                                                  total_exp_time=exp_time,
                                                                  sub_exp_time=exp_time)
+                # print(total_signals, signals, "LALA")
                 total_signals += signals
                 total_noises_squared += noises**2
 
@@ -1557,7 +1553,8 @@ class Imager:
         of the centre of all the pixels in the image.
         """
         # Arrays of pixel coordinates
-        XY = np.meshgrid(np.arange(self.wcs._naxis1), np.arange(self.wcs._naxis2))
+        naxis1, naxis2 = self.wcs.pixel_shape
+        XY = np.meshgrid(np.arange(naxis1), np.arange(naxis2))
 
         # Convert to arrays of RA, dec (ICRS, decimal degrees)
         try:
@@ -1607,8 +1604,8 @@ class Imager:
         if isinstance(self.psf, FittablePSF):
             raise NotImplementedError("Analytical PSFs currently don't work.\n They will take all system memory. See: https://github.com/AstroHuntsman/gunagala/pull/16#issuecomment-426844974 ")
 
-        electrons = np.zeros((self.wcs._naxis2,
-                              self.wcs._naxis1)) * u.electron / (u.second * u.pixel)
+        naxis1, naxis2 = self.wcs.pixel_shape
+        electrons = np.zeros((naxis2, naxis1)) * u.electron / (u.second * u.pixel)
         self.set_WCS_centre(centre, **centre_kwargs)
 
         # Calculate observed sky background
