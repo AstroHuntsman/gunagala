@@ -101,7 +101,8 @@ Please submit bug reports or feature requests in the form of GitHub Issues at
 https://github.com/AstroHuntsman/gunagala/issues. For code contributions please fork and clone the
 repository, create a feature branch and submit a Pull Request.  We recommend the
 `astropy Developer Documentation <http://docs.astropy.org/en/stable/development/workflow/development_workflow.html>`_
-for a description of suitable workflows.
+for a description of suitable workflows. Be sure to follow coding styles outlined there, which can
+be checked during development with ``tox -e codestyle``.
 
 Changelog
 =========
