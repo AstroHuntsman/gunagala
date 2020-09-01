@@ -198,24 +198,10 @@ class FittablePSF(PSF, Fittable2DModel):
         self.x_0 = offsets[1]
         self.y_0 = offsets[0]
 
-        x_min = - (size[1] - 1) / 2
-        x_max = (size[1] + 1) / 2
+        xrange = (-(size[1] - 1) / 2, (size[1] + 1) / 2)
+        yrange = (-(size[0] - 1) / 2, (size[0] + 1) / 2)
 
-        y_min = - (size[0] - 1) / 2
-        y_max = (size[0] + 1) / 2
-
-        print(size, x_min, x_max, y_min, y_max)
-
-        if not(x_min.is_integer()) or not(x_max.is_integer()):
-            raise ValueError(f"Size[1] yields a non-integer range: {x_min} to {x_max}")
-
-        if not(y_min.is_integer()) or not(y_max.is_integer()):
-            raise ValueError(f"Size[0] yields a non-integer range: {y_min} to {y_max}")
-
-        x_range = (int(x_min), int(x_max))
-        y_range = (int(y_min), int(y_max))
-
-        return discretize_model(self, x_range, y_range, mode='oversample', factor=10)
+        return discretize_model(self, xrange, yrange, mode='oversample', factor=10)
 
 
 class MoffatPSF(FittablePSF, Moffat2D):
