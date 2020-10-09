@@ -63,10 +63,7 @@ def create_imagers(config=None):
     imagers = dict()
 
     # Setup imagers
-    for name, imager_info in config['imagers'].items():
-
-        print(name)
-        
+    for name, imager_info in config['imagers'].items():        
         optic_name = imager_info['optic']
         try:
             # Try to get from cache
