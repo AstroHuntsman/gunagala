@@ -190,16 +190,20 @@ class FittablePSF(PSF, Fittable2DModel):
             pixellated PSF will be somewhat less due to truncation of the
             PSF wings by the edge of the image.
         """
-        size = tuple(int(s) for s in size)
         if size[0] <= 0 or size[1] <=0:
-            raise ValueError("`size` must be > 0, got {}!".format(size))
+            raise ValueError(f"size must be > 0, got {size}.")
 
         # Update PSF centre coordinates
         self.x_0 = offsets[1]
         self.y_0 = offsets[0]
 
-        xrange = (-(size[1] - 1) / 2, (size[1] + 1) / 2)
-        yrange = (-(size[0] - 1) / 2, (size[0] + 1) / 2)
+        # Specify x, y ranges
+        x_min = int(-(size[1] - 1) / 2)
+        x_max = x_min + size[1]
+        y_min = int(-(size[0] - 1) / 2)
+        y_max = y_min + size[0]
+        xrange = (x_min, x_max)
+        yrange = (y_min, y_max)
 
         return discretize_model(self, xrange, yrange, mode='oversample', factor=10)
 

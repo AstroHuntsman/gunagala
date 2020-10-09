@@ -64,6 +64,9 @@ def create_imagers(config=None):
 
     # Setup imagers
     for name, imager_info in config['imagers'].items():
+
+        print(name)
+        
         optic_name = imager_info['optic']
         try:
             # Try to get from cache
