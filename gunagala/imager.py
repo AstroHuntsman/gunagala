@@ -422,8 +422,8 @@ class Imager:
                 # Sky counts already included in _is_saturated, need to avoid counting them twice
                 saturated = self._is_saturated(
                     0 * u.electron / (u.pixel * u.second), sub_exp_time, filter_name)
-            signal = np.where(saturated, 0 * u.electron / u.pixel, signal)
-            noise = np.where(saturated, 0 * u.electron / u.pixel, noise)
+            signal = np.where(saturated, 0, signal) * u.electron / u.pixel
+            noise = np.where(saturated, 0, noise) * u.electron / u.pixel
 
         # Totals per (binned) pixel for all imagers.
         signal = signal * self.num_imagers * binning
@@ -1001,8 +1001,8 @@ class Imager:
         # in a single sub exposure, and check against saturation_level.
         if saturation_check:
             saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time, filter_name)
-            signal = np.where(saturated, 0.0 * u.electron, signal)
-            noise = np.where(saturated, 0.0 * u.electron , noise)
+            signal = np.where(saturated, 0.0, signal) * u.electron
+            noise = np.where(saturated, 0.0, noise) * u.electron
 
         return signal, noise
 
@@ -1086,13 +1086,12 @@ class Imager:
 
         total_exp_time = self.extended_source_etc(rate / self.psf.n_pix, filter_name, snr_target, sub_exp_time,
                                                   saturation_check=False, binning=self.psf.n_pix / u.pixel)
-
         # Saturation check. For point sources need to know maximum fraction of total electrons that will end up
         # in a single pixel, this is available as psf.peak. Can use this to calculate maximum electrons per pixel
         # in a single sub exposure, and check against saturation_level.
         if saturation_check:
             saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time, filter_name)
-            total_exp_time = np.where(saturated, 0.0 * u.second, total_exp_time)
+            total_exp_time = np.where(saturated, 0.0, total_exp_time) * u.second
 
         return total_exp_time
 
