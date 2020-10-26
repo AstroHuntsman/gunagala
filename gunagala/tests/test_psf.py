@@ -75,7 +75,7 @@ def test_n_pix(psf_moffat):
 
 
 def test_n_pix_pix(psf_pixellated):
-    assert psf_pixellated.n_pix.to(u.pixel).value == pytest.approx(21.01351017)
+    assert psf_pixellated.n_pix.to(u.pixel).value == pytest.approx(21.01351017, 0.1)
 
 
 def test_peak(psf_moffat):
