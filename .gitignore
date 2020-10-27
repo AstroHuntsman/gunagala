@@ -1,9 +1,6 @@
 # Large data files
 HFI_CompMap_ThermalDustModel_2048_R1.20.fits
 
-# Oddly this isn't in the template.
-.eggs
-
 # Compiled files
 *.py[cod]
 *.a
@@ -39,12 +36,16 @@ docs/_build
 .floo
 .flooignore
 
+# Visual Studio Code project files
+.vscode
+
 # Packages/installer info
 *.egg
 *.egg-info
 dist
 build
 eggs
+.eggs
 parts
 bin
 var
@@ -61,6 +62,7 @@ distribute-*.tar.gz
 .project
 .pydevproject
 .settings
+pip-wheel-metadata/
 
 # Mac OSX
 .DS_Store

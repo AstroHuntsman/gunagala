@@ -1,9 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 # This sub-module is destined for common non-package specific utility
-# functions that will ultimately be merged into `astropy.utils`
+# functions.
+
 import os
-import functools
 import numpy as np
 import astropy.units as u
 from astropy.table import Table

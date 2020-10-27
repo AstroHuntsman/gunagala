@@ -27,3 +27,13 @@ about Aboriginal astronomy please visit http://www.aboriginalastronomy.com.au/.
 .. image:: https://readthedocs.org/projects/gunagala/badge/?version=develop
     :target: http://gunagala.readthedocs.io/en/develop/?badge=develop
     :alt: Documentation Status
+
+
+License
+-------
+
+This project is Copyright (c) Anthony Horton and licensed under
+the terms of the BSD 3-Clause license. This package is based upon
+the `Astropy package template <https://github.com/astropy/package-template>`_
+which is licensed under the BSD 3-clause license. See the licenses folder for
+more information.

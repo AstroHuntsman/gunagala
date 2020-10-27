@@ -9,7 +9,7 @@ Gungala is a Python package for modelling the performance of astronomical instru
 SNR/ETC/sensitivity limit calculations and generation of simulated data.
 
 This package is not intended for rigorous, end-to-end simulations of telescope and instrument
-systems. Instead gunagala implements parameterised models of instrument components in order to
+systems. Instead gunagala implements parameterised models of instrument components in order toa
 enable rapid, efficient evaluation of instrument performance. Anticipated uses include exposure time
 calculators, selection of commercial off the shelf components and exploration of the design
 parameter space for custom components.
@@ -75,9 +75,9 @@ Running the test suite
 ----------------------
 
 After installing Gunagala it is recommended that you run the suite of units tests. This can be done
-at the command line using::
+at the command line using the `tox` automation command (install via ``pip install tox``)::
 
-  $ python setup.py test
+  $ tox -e test
 
 .. highlight:: python3
 
@@ -101,7 +101,8 @@ Please submit bug reports or feature requests in the form of GitHub Issues at
 https://github.com/AstroHuntsman/gunagala/issues. For code contributions please fork and clone the
 repository, create a feature branch and submit a Pull Request.  We recommend the
 `astropy Developer Documentation <http://docs.astropy.org/en/stable/development/workflow/development_workflow.html>`_
-for a description of suitable workflows.
+for a description of suitable workflows. Be sure to follow coding styles outlined there, which can
+be checked during development with ``tox -e codestyle``.
 
 Changelog
 =========
