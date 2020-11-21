@@ -511,7 +511,7 @@ class Imager:
         snr_target : astropy.units.Quantity
             The desired signal to noise ratio, dimensionless unscaled units
         sub_exp_time : astropy.units.Quantity
-            length of individual sub-exposures
+            length of individual sub-exposures, or None if no sub-exposures are needed
         calc_type : {'per pixel', 'per arcsecond squared'}
             Calculation type, either signal to noise ratio per pixel or
             signal to noise ratio per arcsecond^2. Default is 'per pixel'
@@ -563,7 +563,12 @@ class Imager:
             # Measuring the sky background itself.
             rate = self.sky_rate[filter_name]
 
-        sub_exp_time = ensure_unit(sub_exp_time, u.second)
+        if sub_exp_time is None:
+            no_sub_exp_time = True
+            sub_exp_time = 1 * u.second
+        else:
+            sub_exp_time = ensure_unit(sub_exp_time, u.second)
+            no_sub_exp_time = False
 
         # If required total exposure time is much greater than the length of a sub-exposure then
         # all noise sources (including read noise) are proportional to t^0.5 and we can use a
@@ -581,6 +586,9 @@ class Imager:
 
         noise_squared_rate = noise_squared_rate.to(u.electron**2 / (u.pixel**2 * u.second))
         total_exp_time = (snr_target**2 * noise_squared_rate / rate**2).to(u.second)
+
+        if no_sub_exp_time:
+            sub_exp_time = total_exp_time
 
         # Now just round up to the next integer number of sub-exposures, being careful because the total_exp_time
         # and/or sub_exp_time could be Quantity arrays instead of scalars. The simplified expression above is exact
@@ -1061,7 +1069,7 @@ class Imager:
         snr_target : astropy.units.Quantity
             The desired signal to noise ratio, dimensionless unscaled units
         sub_exp_time : astropy.units.Quantity
-            length of individual sub-exposures
+            length of individual sub-exposures, or None if no sub-exposures are needed
         saturation_check : bool, optional
             If `True` will set the exposure time to zero where the
             electrons per pixel in a single sub-exposure exceed the
@@ -1086,6 +1094,9 @@ class Imager:
 
         total_exp_time = self.extended_source_etc(rate / self.psf.n_pix, filter_name, snr_target, sub_exp_time,
                                                   saturation_check=False, binning=self.psf.n_pix / u.pixel)
+
+        if sub_exp_time is None:
+            sub_exp_time = total_exp_time
 
         # Saturation check. For point sources need to know maximum fraction of total electrons that will end up
         # in a single pixel, this is available as psf.peak. Can use this to calculate maximum electrons per pixel
