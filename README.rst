@@ -16,6 +16,9 @@ the Kamilaroi/Gamilaraay language
 Australians have studied the night skies above Australia for at least 50000 years. To learn more
 about Aboriginal astronomy please visit http://www.aboriginalastronomy.com.au/.
 
+.. image:: https://zenodo.org/badge/86296632.svg
+   :target: https://zenodo.org/badge/latestdoi/86296632
+
 .. image:: https://travis-ci.org/AstroHuntsman/gunagala.svg
     :target: https://travis-ci.org/AstroHuntsman/gunagala
     :alt: Travis Status
