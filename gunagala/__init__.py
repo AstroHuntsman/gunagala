@@ -7,14 +7,7 @@ This is a Python package for modelling the performance of astronomical instrumen
 SNR/ETC/sensitivity limit calculations and generation of simulated data.
 """
 
-# Packages may add whatever they like to this file, but
-# should keep this content at the top.
-# ----------------------------------------------------------------------------
-from ._astropy_init import *
-# ----------------------------------------------------------------------------
+from .version import version as __version__
 
-if not _ASTROPY_SETUP_:
-    # For egg_info test builds to pass, put package imports here.
-
-    #from .example_mod import *
-    pass
+# Then you can be explicit to control what ends up in the namespace,
+# __all__ = ['do_primes'] #original example from https://packaging-guide.openastronomy.org/
