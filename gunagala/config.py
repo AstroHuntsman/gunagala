@@ -135,7 +135,7 @@ def save_config(path, config, clobber=True):
 def _add_to_conf(config, fn):
     try:
         with open(fn, 'r') as f:
-            c = yaml.load(f.read())
+            c = yaml.load(f.read(), Loader=yaml.SafeLoader)
             if c is not None and isinstance(c, dict):
                 config.update(c)
     except IOError:  # pragma: no cover
