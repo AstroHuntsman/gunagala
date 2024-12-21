@@ -221,8 +221,8 @@ class Filter:
         """
         waves = ensure_unit(waves, u.nm)
 
-        if self.apply_aoi and (theta_range or self.theta_range):
-            if theta_range:
+        if self.apply_aoi and (theta_range is not None or self.theta_range is not None):
+            if theta_range is not None:
                 theta_range = ensure_unit(theta_range, u.radian)
             else:
                 theta_range = self.theta_range
@@ -260,14 +260,14 @@ class Filter:
             self._peak = self._transmission.max()
             self._lambda_peak = self.wavelengths[self._transmission.argmax()]
             above_half_max = np.arange(len(self._transmission))[self._transmission > 0.5 * self._peak]
-            if self.apply_aoi and self.theta_range:
+            if self.apply_aoi and self.theta_range is not None:
                 blue_half_max_a = self.wavelengths[above_half_max[0] - 1] * \
                     (1 - (np.sin(self.theta_range.max() / self.n_eff))**2)**0.5
             else:
                 blue_half_max_a = self.wavelengths[above_half_max[0] - 1]
             blue_half_max_b = self.wavelengths[above_half_max[0]]
 
-            if self.apply_aoi and self.theta_range:
+            if self.apply_aoi and self.theta_range is not None:
                 red_half_max_a = self.wavelengths[above_half_max[-1]] * \
                     (1 - (np.sin(self.theta_range.max() / self.n_eff))**2)**0.5
             else:
@@ -279,7 +279,7 @@ class Filter:
             wave1 = self._params['wave1']
             wave2 = self._params['wave2']
             self._lambda_peak = (wave1 + wave2) / 2
-            if self.apply_aoi and self.theta_range:
+            if self.apply_aoi and self.theta_range is not None:
                 blue_half_max_a = (wave1 - (wave2 - wave1)) * \
                     (1 - (np.sin(self.theta_range.max() / self.n_eff))**2)**0.5
             else:
