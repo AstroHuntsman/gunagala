@@ -73,7 +73,7 @@ class Filter:
 
         self.apply_aoi = apply_aoi
         self.n_eff = n_eff
-        if theta_range:
+        if theta_range is not None:
             self._theta_range = ensure_unit(theta_range, u.radian)
         else:
             self._theta_range = None

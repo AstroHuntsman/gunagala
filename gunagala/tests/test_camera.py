@@ -2,6 +2,8 @@ import pytest
 from scipy import stats
 import astropy.units as u
 
+import numpy as np
+
 from gunagala.camera import Camera
 
 
@@ -53,8 +55,9 @@ def test_dark_frame():
                  dark_current_dist=dist,
                  dark_current_seed=42)
     assert isinstance(ccd.dark_frame, u.Quantity)
-    assert (ccd.dark_frame.shape * u.pixel == ccd.resolution).all()
-    fitted_params = stats.lognorm.fit(ccd.dark_frame.value[0:100,0:100])
+    assert ccd.dark_frame.shape[0] * u.pixel == ccd.resolution[0]
+    assert ccd.dark_frame.shape[1] * u.pixel == ccd.resolution[1]
+    fitted_params = stats.lognorm.fit(np.array(ccd.dark_frame.value[0:100,0:100].flatten()))
     assert fitted_params[0] == pytest.approx(shape, rel=0.02)
     assert fitted_params[1] == pytest.approx(loc, rel=0.02)
     assert fitted_params[2] == pytest.approx(scale, rel=0.02)

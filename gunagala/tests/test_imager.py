@@ -130,7 +130,7 @@ def test_time_calculations(imager, filter_name):
 
     # Round trip test, including rounding down.
     total_elapsed_time = imager.total_elapsed_time(exp_list)
-    assert imager.total_exposure_time(total_elapsed_time + sub_exp_time / 2, sub_exp_time)
+    assert imager.total_exposure_time(total_elapsed_time + sub_exp_time / 2, sub_exp_time) == total_exposure_time
 
 def test_extended_snr(imager, filter_name):
     sb = 25 * u.ABmag
