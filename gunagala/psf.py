@@ -358,7 +358,7 @@ class PixellatedPSF(PSF):
             pixellated PSF will be somewhat less due to truncation of the
             PSF wings by the edge of the image.
         """
-        size = np.array(size, dtype=np.int)
+        size = np.array(size, dtype=int)
         offsets = np.array(offsets)
         # Only want to caclulate resampled PSF for positions that fall within the PSF data,
         # otherwise end up filling the RAM with lots of double precision zeros.
@@ -378,7 +378,7 @@ class PixellatedPSF(PSF):
         # Move origin to output array origin
         limits = limits + (size - 1) / 2
         # Round limits to the centres of the pixels containing the boundary
-        limits = np.rint(limits).astype(np.int)
+        limits = np.rint(limits).astype(int)
         # Crop to output array edges
         limits = np.array((np.where(limits[0] >= 0, limits[0], 0),
                            np.where(limits[1] < size, limits[1], size - 1)))
