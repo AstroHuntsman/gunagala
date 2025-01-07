@@ -16,17 +16,17 @@ the Kamilaroi/Gamilaraay language
 Australians have studied the night skies above Australia for at least 50000 years. To learn more
 about Aboriginal astronomy please visit http://www.aboriginalastronomy.com.au/.
 
-#.. image:: https://travis-ci.org/AstroHuntsman/gunagala.svg
-#    :target: https://travis-ci.org/AstroHuntsman/gunagala
-#    :alt: Travis Status
+.. image:: https://github.com/AstroHuntsman/gunagala/actions/workflows/pythontest.yml/badge.svg
+    :target: https://github.com/AstroHuntsman/gunagala/actions
+    :alt: Python package tests
 
-#.. image:: https://coveralls.io/repos/github/AstroHuntsman/gunagala/badge.svg?branch=master
-#    :target: https://coveralls.io/github/AstroHuntsman/gunagala?branch=master
-#    :alt: Coverage status
+.. image:: https://coveralls.io/repos/github/AstroHuntsman/gunagala/badge.svg?branch=develop
+    :target: https://coveralls.io/github/AstroHuntsman/gunagala?branch=develop
+    :alt: Coverage status
 
-.. image:: https://readthedocs.org/projects/gunagala/badge/?version=develop
-    :target: http://gunagala.readthedocs.io/en/develop/?badge=develop
-    :alt: Documentation Status
+#.. image:: https://readthedocs.org/projects/gunagala/badge/?version=develop
+#    :target: http://gunagala.readthedocs.io/en/develop/?badge=develop
+#    :alt: Documentation Status
 
 
 Development

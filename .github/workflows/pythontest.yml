@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9]
+        python-version: [3.12]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.12']
         platform: [ubuntu-latest, macos-latest]
     steps:
     - uses: actions/checkout@v3
@@ -45,3 +45,13 @@ jobs:
       run: tox
       env:
         PLATFORM: ${{ matrix.platform }}
+    - name: Upload coverage.xml
+      if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.12' }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: tox-gh-actions-coverage
+        path: coverage.xml
+        if-no-files-found: error
+    - name: Upload coverage.xml to codecov
+      if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.12' }}
+      uses: codecov/codecov-action@v2
