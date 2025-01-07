@@ -29,6 +29,44 @@ about Aboriginal astronomy please visit http://www.aboriginalastronomy.com.au/.
     :alt: Documentation Status
 
 
+Development
+-----------
+
+To install gunagala in development mode, clone the repository and run:
+
+.. code-block:: bash
+
+    git clone https://github.com/AstroHuntsman/gunagala.git
+    cd gunagala
+    pip install -e .
+
+To run the tests on various python versions, install tox (`pip install tox`) and run:
+
+.. code-block:: bash
+
+    tox
+
+Or run tests in your current python environement:
+
+.. code-block:: bash
+
+    cd gunagala
+    pip install -e .[test]
+    pytest
+
+To build the documentation, install the package in development mode and run: 
+
+.. code-block:: bash
+
+    pip install -e .[docs]
+    cd docs
+    make html
+
+Or just run:
+
+.. code-block:: bash
+
+    tox -e build_docs -- -aE
 
 License
 -------
