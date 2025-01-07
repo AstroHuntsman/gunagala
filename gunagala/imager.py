@@ -1236,7 +1236,7 @@ class Imager:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
 
         if not isinstance(surface_brightness, u.Quantity):
-            brightness = brightness * u.ABmag
+            surface_brightness = surface_brightness * u.ABmag
 
         try:
             # If surface brightness is a count rate this should work
