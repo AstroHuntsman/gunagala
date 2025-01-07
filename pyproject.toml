@@ -31,7 +31,8 @@ dynamic = ["version"]
 test = [
     "pytest",
     "pytest-doctestplus",
-    "pytest-cov"
+    "pytest-cov",
+    "tox"
 ]
 docs = [
     "sphinx",
