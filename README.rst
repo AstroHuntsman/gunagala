@@ -24,9 +24,9 @@ about Aboriginal astronomy please visit http://www.aboriginalastronomy.com.au/.
     :target: https://coveralls.io/github/AstroHuntsman/gunagala?branch=develop
     :alt: Coverage status
 
-#.. image:: https://readthedocs.org/projects/gunagala/badge/?version=develop
-#    :target: http://gunagala.readthedocs.io/en/develop/?badge=develop
-#    :alt: Documentation Status
+.. .. image:: https://readthedocs.org/projects/gunagala/badge/?version=develop
+..    :target: http://gunagala.readthedocs.io/en/develop/?badge=develop
+..   :alt: Documentation Status
 
 
 Development
