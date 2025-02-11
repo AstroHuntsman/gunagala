@@ -363,7 +363,7 @@ class Imager:
             raise ValueError(
                 "Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
 
-        if surface_brightness:
+        if surface_brightness is not None:
             # Given a source brightness
             if callable(surface_brightness):
                 # Surface brightness is a callable, should return surface brightness as a function of wavelength
@@ -406,7 +406,7 @@ class Imager:
         signal = (rate * total_exp_time).to(u.electron / u.pixel)
         # If calculating the signal & noise for the sky itself need to avoid double counting it here
         sky_counts = self.sky_rate[filter_name] * \
-            total_exp_time if surface_brightness else 0 * u.electron / u.pixel
+            total_exp_time if surface_brightness is not None else 0 * u.electron / u.pixel
         dark_counts = self.camera.dark_current * total_exp_time
         total_read_noise = number_subs**0.5 * self.camera.read_noise
 
@@ -416,7 +416,7 @@ class Imager:
 
         # Saturation check
         if saturation_check:
-            if surface_brightness:
+            if surface_brightness is not None:
                 saturated = self._is_saturated(rate, sub_exp_time, filter_name)
             else:
                 # Sky counts already included in _is_saturated, need to avoid counting them twice
@@ -549,7 +549,7 @@ class Imager:
             # pixel area to convert it to a per pixel value.
             snr_target = snr_target * self.pixel_scale / (u.arcsecond / u.pixel)
 
-        if surface_brightness:
+        if surface_brightness is not None:
             # Given a source brightness
             if not isinstance(surface_brightness, u.Quantity):
                 surface_brightness = surface_brightness * u.ABmag
@@ -568,7 +568,7 @@ class Imager:
         # If required total exposure time is much greater than the length of a sub-exposure then
         # all noise sources (including read noise) are proportional to t^0.5 and we can use a
         # simplified expression to estimate total exposure time.
-        if surface_brightness:
+        if surface_brightness is not None:
             noise_squared_rate = ((rate +
                                    self.sky_rate[filter_name] +
                                    self.camera.dark_current) * (u.electron / u.pixel) +
@@ -589,7 +589,7 @@ class Imager:
         number_subs = np.ceil(total_exp_time / sub_exp_time)
 
         if saturation_check:
-            if surface_brightness:
+            if surface_brightness is not None:
                 saturated = self._is_saturated(rate, sub_exp_time, filter_name)
             else:
                 # Sky counts already included in _is_saturated, need to avoid counting them twice
@@ -1236,7 +1236,7 @@ class Imager:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
 
         if not isinstance(surface_brightness, u.Quantity):
-            brightness = brightness * u.ABmag
+            surface_brightness = surface_brightness * u.ABmag
 
         try:
             # If surface brightness is a count rate this should work
@@ -1346,19 +1346,19 @@ class Imager:
         if filter_name not in self.filter_names:
             raise ValueError("This Imager has no filter '{}'!".format(filter_name))
 
-        if bool(bright_limit) == bool(shortest_exp_time):
+        if (bright_limit is not None and shortest_exp_time is not None) or (bright_limit is None and shortest_exp_time is None):
             raise ValueError(
                 "One and only one of bright_limit and shortest_exp_time must be specified!")
 
-        if bool(faint_limit) == bool(num_long_exp):
-            raise ValueError("one and only one of faint_limit and num_long_exp must be specified!")
+        if (faint_limit is not None and num_long_exp is not None) or (faint_limit is None and num_long_exp is None):
+            raise ValueError("One and only one of faint_limit and num_long_exp must be specified!")
 
         longest_exp_time = ensure_unit(longest_exp_time, u.second)
         if longest_exp_time < self.camera.minimum_exposure:
             raise ValueError(
                 "Longest exposure time shorter than minimum exposure time of the camera!")
 
-        if bright_limit:
+        if bright_limit is not None:
             # First calculate exposure time that will just saturate on the brightest sources.
             shortest_exp_time = self.point_source_saturation_exp(bright_limit, filter_name)
         else:
@@ -1367,7 +1367,7 @@ class Imager:
         # If the brightest sources won't saturate even for the longest requested exposure time then HDR mode isn't
         # necessary and we can just use the normal ETC to create a boring exposure time list.
         if shortest_exp_time >= longest_exp_time:
-            if faint_limit:
+            if faint_limit is not None:
                 total_exp_time = self.point_source_etc(brightness=faint_limit,
                                                        filter_name=filter_name,
                                                        sub_exp_time=longest_exp_time,
@@ -1395,7 +1395,7 @@ class Imager:
         exp_times = [shortest_exp_time.to(u.second) * exp_time_ratio **
                      i for i in range(num_exp_times)]
 
-        if faint_limit:
+        if faint_limit is not None:
             num_long_exp = 0
             # Signals and noises from each of the sub exposures in the HDR sequence
             signals, noises = self.point_source_signal_noise(brightness=faint_limit,
